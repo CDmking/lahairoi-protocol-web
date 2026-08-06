@@ -15,8 +15,12 @@
         var availW = window.innerWidth;
         var availH = window.innerHeight;
 
+        // 移动端横屏（矮屏）：高度开销小，格子可更大
+        var isShortLandscape = availW > availH && availH < 500;
+        var heightOverhead = isShortLandscape ? 60 : 200;
+
         var cellByW = Math.floor((availW - 40) / 9);
-        var cellByH = Math.floor((availH - 200) / 9);
+        var cellByH = Math.floor((availH - heightOverhead) / 9);
         var newSize = Math.max(18, Math.min(cellByW, cellByH, 64));
 
         CONFIG.CELL_SIZE = newSize;
