@@ -88,6 +88,44 @@ html, body {
     background: rgba(0, 255, 255, 0.12);
 }
 
+.game-terminal .fullscreen-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(0, 255, 255, 0.35);
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--accent-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    transition: all 0.25s;
+    padding: 0;
+}
+
+.game-terminal .fullscreen-btn:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
+    background: rgba(0, 255, 255, 0.12);
+}
+
+.game-terminal .fullscreen-btn.active {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+    background: rgba(0, 255, 255, 0.2);
+}
+
+.game-terminal .fullscreen-icon {
+    width: 18px;
+    height: 18px;
+    display: block;
+    pointer-events: none;
+}
+
 .game-terminal .header {
     display: flex;
     flex-direction: column;
@@ -771,6 +809,18 @@ html, body {
     .game-terminal .leaderboard-toggle {
         font-size: 9px;
         padding: 2px 6px;
+    }
+
+    .game-terminal .fullscreen-btn {
+        bottom: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+    }
+
+    .game-terminal .fullscreen-icon {
+        width: 14px;
+        height: 14px;
     }
 }
 
