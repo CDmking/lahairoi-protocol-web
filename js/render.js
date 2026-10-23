@@ -6,73 +6,70 @@
         }, 2500);
     }
 
-    function loadLeaderboard() {
+    var HIGH_SCORE_KEY = 'lahairoi_v3_highscore';
+    var LEGACY_LEADERBOARD_KEY = 'lahairoi_v3_leaderboard';
+
+    function loadHighScore() {
+        var highScore = 0;
         try {
-            var stored = localStorage.getItem('lahairoi_v3_leaderboard');
-            if (stored) {
+            var stored = localStorage.getItem(HIGH_SCORE_KEY);
+            if (stored !== null) {
                 var parsed = JSON.parse(stored);
-                if (Array.isArray(parsed)) {
-                    leaderboardData = {
-                        records: parsed,
-                        attrHighScores: Object.assign({}, DEFAULT_ATTR_SCORES)
-                    };
-                } else {
-                    leaderboardData = parsed;
-                    if (!leaderboardData.attrHighScores) {
-                        leaderboardData.attrHighScores = Object.assign({}, DEFAULT_ATTR_SCORES);
-                    }
+                if (parsed && typeof parsed.highScore === 'number') {
+                    highScore = parsed.highScore;
                 }
             } else {
-                throw 'empty';
+                highScore = readLegacyHighScore();
+                if (highScore > 0) {
+                    saveHighScoreValue(highScore);
+                }
             }
         } catch (e) {
-            leaderboardData = {
-                records: [],
-                attrHighScores: Object.assign({}, DEFAULT_ATTR_SCORES)
-            };
+            highScore = readLegacyHighScore();
+            if (highScore > 0) {
+                saveHighScoreValue(highScore);
+            }
         }
-        updateHighScore();
+
+        try {
+            localStorage.removeItem(LEGACY_LEADERBOARD_KEY);
+        } catch (e) { }
+
+        state.highScore = highScore;
+        updateHighScoreDisplay();
     }
 
-    function updateHighScore() {
-        state.highScore = leaderboardData.records.length > 0 ? leaderboardData.records[0].score : 0;
+    function readLegacyHighScore() {
+        var highScore = 0;
+        try {
+            var stored = localStorage.getItem(LEGACY_LEADERBOARD_KEY);
+            if (stored) {
+                var parsed = JSON.parse(stored);
+                var records = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.records) ? parsed.records : []);
+                for (var i = 0; i < records.length; i++) {
+                    if (records[i] && typeof records[i].score === 'number' && records[i].score > highScore) {
+                        highScore = records[i].score;
+                    }
+                }
+            }
+        } catch (e) {
+            highScore = 0;
+        }
+        return highScore;
+    }
+
+    function saveHighScore() {
+        saveHighScoreValue(state.highScore);
+    }
+
+    function saveHighScoreValue(value) {
+        try {
+            localStorage.setItem(HIGH_SCORE_KEY, JSON.stringify({ highScore: value }));
+        } catch (e) { }
+    }
+
+    function updateHighScoreDisplay() {
         highScoreEl.innerText = state.highScore;
-    }
-
-    function saveLeaderboard() {
-        localStorage.setItem('lahairoi_v3_leaderboard', JSON.stringify(leaderboardData));
-        updateHighScore();
-        renderLeaderboard();
-    }
-
-    function renderLeaderboard() {
-        leaderboardListEl.innerHTML = '';
-        if (leaderboardData.records.length === 0) {
-            var emptyLi = document.createElement('li');
-            emptyLi.className = 'leaderboard-item';
-            emptyLi.style.justifyContent = 'center';
-            emptyLi.innerHTML = '<span style="color: #666;">NO DATA</span>';
-            leaderboardListEl.appendChild(emptyLi);
-            return;
-        }
-        leaderboardData.records.slice(0, 10).forEach(function (record, index) {
-            var li = document.createElement('li');
-            li.className = 'leaderboard-item';
-            li.innerHTML = '<span class="rank-score">#' + (index + 1) + ' &nbsp; ' + record.score + '</span><span class="date">' + record.date + '</span>';
-            leaderboardListEl.appendChild(li);
-        });
-    }
-
-    function addScoreToLeaderboard(finalScore) {
-        if (finalScore <= 0) return;
-        var today = new Date();
-        var dateStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-        leaderboardData.records.push({ score: finalScore, date: dateStr });
-        leaderboardData.records.sort(function (a, b) { return b.score - a.score; });
-        if (leaderboardData.records.length > 10) {
-            leaderboardData.records = leaderboardData.records.slice(0, 10);
-        }
-        saveLeaderboard();
     }
 
     function renderShapeInSlot(shapeData, slotIndex) {
@@ -156,12 +153,4 @@
 
     function updateScoreDisplay() {
         currentScoreEl.innerText = state.score;
-    }
-
-    function updateAttrScoreDisplay() {
-        Object.keys(attrScoreEls).forEach(function (key) {
-            var current = state.attrScores[key];
-            var highest = leaderboardData.attrHighScores[key];
-            attrScoreEls[key].innerText = current + ' (' + highest + ')';
-        });
     }

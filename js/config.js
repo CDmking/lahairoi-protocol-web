@@ -4,8 +4,7 @@
         GAP: 2,
         SCORE_BLOCK: 10,
         SCORE_LINE: 100,
-        SCORE_MULTI_MULTIPLIER: 50,
-        ATTR_SCORE_BONUS: 5
+        SCORE_MULTI_MULTIPLIER: 50
     };
 
     var TRAY_CELL_RATIO = 0.65;
@@ -61,8 +60,6 @@
         [[1, 1, 0], [0, 1, 1]],
         [[0, 1], [1, 1], [1, 0]]
     ];
-
-    var DEFAULT_ATTR_SCORES = { glacio: 0, fusion: 0, electro: 0, aero: 0, spectro: 0, havoc: 0 };
 
     var DIFFICULTY_CONFIG = {
         easy:   { scoreMultiplier: 0.7 },

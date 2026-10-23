@@ -1,0 +1,161 @@
+/* Mobile: portrait hint and vertical stack */
+@media screen and (max-width: 899px) {
+    .game-terminal .game-area {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .game-terminal .board-container {
+        order: 0;
+    }
+
+    .game-terminal .tray-container {
+        order: 1;
+        flex-direction: row;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .game-terminal .tray-slot {
+        flex: 1;
+        height: 90px;
+    }
+
+    .game-terminal .terminal-container {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .game-terminal .header {
+        padding-bottom: 8px;
+        gap: 8px;
+    }
+
+    .game-terminal .score-value {
+        font-size: 20px;
+    }
+
+    .game-terminal .header-top {
+        padding-right: 35px;
+    }
+
+}
+
+@media screen and (max-width: 480px) {
+    .game-terminal .terminal-container {
+        padding: 6px;
+        gap: 6px;
+        border-radius: 4px;
+    }
+
+    .game-terminal .game-area {
+        gap: 6px;
+    }
+
+    .game-terminal .header {
+        padding-bottom: 4px;
+        gap: 4px;
+    }
+
+    .game-terminal .title-glitch {
+        font-size: 14px;
+    }
+
+    .game-terminal .score-board {
+        gap: 10px;
+    }
+
+    .game-terminal .score-value {
+        font-size: 16px;
+    }
+
+    .game-terminal .tray-slot {
+        height: 70px;
+    }
+
+    .game-terminal .board-container {
+        padding: 5px;
+    }
+
+    .game-terminal .diff-btn {
+        font-size: 9px;
+        padding: 2px 8px;
+    }
+
+    .game-terminal .fullscreen-btn {
+        bottom: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+    }
+
+    .game-terminal .fullscreen-icon {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+@media screen and (max-height: 600px) {
+    .game-terminal .terminal-container { padding: 10px; gap: 10px; }
+    .game-terminal .header { padding-bottom: 5px; gap: 5px; }
+    .game-terminal .title-glitch { font-size: 14px; }
+    .game-terminal .score-value { font-size: 20px; }
+    .game-terminal .score-board { gap: 15px; }
+    .game-terminal .game-area { gap: 10px; }
+    .game-terminal .tray-container { min-width: 100px; padding: 5px; gap: 5px; }
+    .game-terminal .footer-credits { font-size: 8px; top: 2px; }
+}
+
+@media screen and (max-height: 400px) {
+    .game-terminal .terminal-container { flex-direction: row; flex-wrap: wrap; justify-content: center;}
+    .game-terminal .header { width: 100%; flex-direction: row; justify-content: space-between; align-items: center; border-bottom: none; padding-bottom: 0;}
+    .game-terminal .header-top { gap: 20px; }
+}
+
+/* 移动端横屏：布局与 PC 端一致（双栏横排，紧凑尺寸适配矮屏） */
+@media screen and (orientation: landscape) and (max-height: 500px) and (hover: none) and (pointer: coarse) {
+    .game-terminal .terminal-container {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        padding: 6px 10px;
+        gap: 6px;
+    }
+    .game-terminal .game-area {
+        flex-direction: row;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .game-terminal .board-container { order: 0; padding: 6px; }
+    .game-terminal .tray-container {
+        order: 0;
+        flex-direction: column;
+        gap: 6px;
+        width: auto;
+        min-width: 110px;
+        padding: 6px;
+    }
+    .game-terminal .tray-slot { flex: 1; height: auto; min-height: 48px; }
+    .game-terminal .header {
+        width: auto;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: stretch;
+        border-bottom: 1px solid var(--grid-line);
+        padding-bottom: 4px;
+        gap: 4px;
+    }
+    .game-terminal .header-top { gap: 15px; padding-right: 35px; }
+    .game-terminal .title-glitch { font-size: 13px; }
+    .game-terminal .score-value { font-size: 16px; }
+    .game-terminal .score-board { gap: 15px; }
+    .game-terminal .fullscreen-btn { width: 34px; height: 34px; bottom: 12px; right: 12px; }
+    .game-terminal .fullscreen-icon { width: 15px; height: 15px; }
+    .game-terminal .footer-credits { font-size: 8px; top: 2px; }
+    .game-terminal .diff-btn { font-size: 9px; padding: 2px 8px; }
+    .game-terminal .help-btn { width: 24px; height: 24px; font-size: 12px; top: 6px; right: 6px; }
+    .game-terminal .demo-nav-btn { width: 22px; height: 22px; font-size: 10px; }
+    .game-terminal .demo-play-btn { font-size: 10px; padding: 4px 20px; }
+    .game-terminal .restart-btn { font-size: 12px; padding: 8px 18px; }
+}
