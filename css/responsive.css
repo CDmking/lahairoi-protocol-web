@@ -90,6 +90,14 @@
         height: 32px;
     }
 
+    .game-terminal .music-btn {
+        bottom: 12px;
+        right: 52px;
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+
     .game-terminal .fullscreen-icon {
         width: 14px;
         height: 14px;
@@ -152,6 +160,7 @@
     .game-terminal .score-board { gap: 15px; }
     .game-terminal .fullscreen-btn { width: 34px; height: 34px; bottom: 12px; right: 12px; }
     .game-terminal .fullscreen-icon { width: 15px; height: 15px; }
+    .game-terminal .music-btn { width: 34px; height: 34px; bottom: 12px; right: 54px; font-size: 15px; }
     .game-terminal .footer-credits { font-size: 8px; top: 2px; }
     .game-terminal .diff-btn { font-size: 9px; padding: 2px 8px; }
     .game-terminal .help-btn { width: 24px; height: 24px; font-size: 12px; top: 6px; right: 6px; }

@@ -26,6 +26,8 @@
         helpBtn = document.getElementById('helpBtn');
         fullscreenBtn = document.getElementById('fullscreenBtn');
 
+        initBgm();
+
         if (!eventsBound) {
             initFullscreen();
             restartBtn.addEventListener('click', init);

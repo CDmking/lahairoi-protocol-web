@@ -31,8 +31,11 @@
 │   ├── overlays.css       # Toast、游戏结束、消除动画
 │   ├── tutorial.css       # Demo 教学界面
 │   └── responsive.css     # 响应式断点（最后加载）
+├── audios/
+│   └── BGM.mp3            # 循环背景音乐
 ├── js/
-│   ├── config.js          # 常量、方块形状定义、难度参数
+│   ├── shapes.js          # 方块形状数据（32 种）
+│   ├── config.js          # 常量、难度参数
 │   ├── state.js           # 运行时状态 + 最高分（localStorage）
 │   ├── logic.js           # 纯函数：棋盘碰撞检测、权重计算
 │   ├── elements.js        # 共享 DOM 引用、拖拽状态、窗口缩放处理
@@ -41,6 +44,7 @@
 │   ├── board.js           # 棋盘初始化、方块生成、放置、消除、计分
 │   ├── tutorial.js        # Demo 教学场景数据与自动播放
 │   ├── fullscreen.js      # 全屏切换与状态同步
+│   ├── audio.js           # 背景音乐播放与静音控制
 │   ├── ui.js              # DOM 绑定、事件监听、难度切换
 │   └── game.js            # 入口：DOMContentLoaded → initGame()
 ├── img/
@@ -65,21 +69,24 @@
 ### `index.html`
 - 全部 DOM 结构：棋盘、托盘、游戏结束遮罩、Demo 覆盖层
 - `<link>` 加载顺序固定：base → header → board → overlays → tutorial → responsive
-- `<script>` 加载顺序固定：config → state → logic → elements → render → drag → board → tutorial → fullscreen → ui → game
+- `<script>` 加载顺序固定：shapes → config → state → logic → elements → render → drag → board → tutorial → fullscreen → audio → ui → game
 - 页脚署名（KURO GAMES → 蒲公桜 → CD_Mking）
 
 ### `css/*.css`
 - `base.css`：重置、`:root` 变量、`.game-terminal`、终端容器、页脚、属性图标
-- `header.css`：帮助/全屏按钮、标题、分数、难度选择
+- `header.css`：帮助/全屏/音乐按钮、标题、分数、难度选择
 - `board.css`：游戏区、棋盘、格子状态、托盘、拖拽方块
 - `overlays.css`：Toast、游戏结束遮罩、消除动画
 - `tutorial.css`：Demo 覆盖层、面板、导航、播放按钮、拖拽幽灵
 - `responsive.css`：全部 `@media` 断点，必须最后加载以覆盖基础样式
 
+### `js/shapes.js`
+- `SHAPES_DATA`：方块形状唯一数据源（含 id / rows / cols / matrix）
+- `SHAPES_ALL`：从 `SHAPES_DATA.shapes` 提取的 32 种二维 0/1 矩阵
+
 ### `js/config.js`
 - `CONFIG` 对象：棋盘大小、格子尺寸、计分常量
 - `ATTRIBUTES`：6 种元素定义（id + SVG icon HTML）
-- `SHAPES_ALL`：24 种方块形状（二维 0/1 矩阵）
 - `DIFFICULTY_CONFIG`：三档难度倍率
 - `recalcLayout()`：根据窗口尺寸动态计算格子大小
 
@@ -118,6 +125,12 @@
 
 ### `js/fullscreen.js`
 - 全屏能力检测、进入/退出全屏、按钮状态同步
+
+### `js/audio.js`
+- `initBgm()`：初始化循环背景音乐、读取静音状态、绑定音乐按钮
+- `tryPlayBgm()`：尝试播放；自动播放被浏览器拦截时，在用户首次交互后补播
+- `updateMusicBtn()`：同步音乐按钮图标、`title`、`aria-label` 与静音状态
+- 静音状态存储 key：`lahairoi_v3_bgm_muted`
 
 ### `js/ui.js`
 - `initGame()`：获取 DOM 引用并绑定所有事件
@@ -165,7 +178,7 @@
 ## 自适应方块生成算法
 
 `fillTray()` 根据棋盘实时空位计算权重：
-1. 遍历所有 24 种形状，调用 `countPlacements()` 统计合法放置数
+1. 遍历所有 32 种形状，调用 `countPlacements()` 统计合法放置数
 2. 按难度调用 `getShapeWeight()` 计算权重
    - **SIMPLE**：`p²/area` — 倾向小块、高放置数
    - **STANDARD**：`p` — 线性权重
@@ -202,13 +215,15 @@ npx serve .
 
 ### 全局变量
 所有文件共享以下顶层全局变量：
-- `CONFIG`, `ATTRIBUTES`, `SHAPES_ALL`, `DIFFICULTY_CONFIG`, `TRAY_CELL_SIZE`, `TRAY_CELL_RATIO` (config.js)
+- `SHAPES_DATA`, `SHAPES_ALL` (shapes.js)
+- `CONFIG`, `ATTRIBUTES`, `DIFFICULTY_CONFIG`, `TRAY_CELL_SIZE`, `TRAY_CELL_RATIO` (config.js)
 - `state` (state.js)
 - `boardEl`, `traySlots`, `draggedElement`, 等 DOM 引用与拖拽状态 (elements.js)
 - `onDragStart` / `onDragEnd` (drag.js)
 - `init`, `fillTray`, `placeShape`, `checkLines`, `checkGameOver`, `addScore` (board.js)
 - `DEMO_SCENES`, `applyScene`, `playScene` 等教学函数 (tutorial.js)
 - `renderShapeInSlot`, `showToast`, `highlightBoard` 等渲染函数 (render.js)
+- `initBgm`, `tryPlayBgm`, `updateMusicBtn` (audio.js)
 - `initGame`, `setDifficulty` (ui.js)
 
 ### CSS 变量
@@ -224,7 +239,10 @@ npx serve .
 ## 常见修改场景
 
 ### 添加新方块形状
-在 `config.js` 的 `SHAPES_ALL` 数组末尾追加新的二维矩阵即可（自动参与权重计算）。
+在 `shapes.js` 的 `SHAPES_DATA.shapes` 数组末尾追加 `{ id, rows, cols, matrix }`，并更新 `shapeCount`。
+
+### 更换背景音乐
+替换 `audios/BGM.mp3`（保持文件名），或在 `index.html` 的 `<audio id="bgm">` 中修改 `src` 路径。默认音量在 `audio.js` 的 `BGM_VOLUME` 中调整。
 
 ### 增加新难度
 1. `config.js` 的 `DIFFICULTY_CONFIG` 添加新条目
