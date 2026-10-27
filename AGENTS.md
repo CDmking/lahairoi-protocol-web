@@ -85,13 +85,13 @@
 - `SHAPES_ALL`：从 `SHAPES_DATA.shapes` 提取的 32 种二维 0/1 矩阵
 
 ### `js/config.js`
-- `CONFIG` 对象：棋盘大小、格子尺寸、计分常量
+- `CONFIG` 对象：棋盘大小、格子尺寸、计分常量与连击倍率
 - `ATTRIBUTES`：6 种元素定义（id + SVG icon HTML）
 - `DIFFICULTY_CONFIG`：三档难度倍率
 - `recalcLayout()`：根据窗口尺寸动态计算格子大小
 
 ### `js/state.js`
-- `state` 对象：棋盘、当前分数、历史最高分、难度、Demo 模式、可用方块、游戏结束标志
+- `state` 对象：棋盘、当前分数、历史最高分、连击数、难度、Demo 模式、可用方块、游戏结束标志
 
 ### `js/logic.js`
 - `canPlaceShape(matrix, startX, startY)`：方块能否放置
@@ -100,6 +100,9 @@
 - `placementsOverlap(a, b)`：判断两个放置位图是否重叠
 - `canPlaceAllThree(listA, listB, listC)`：判断 3 个方块能否同时放入当前空位
 - `getShapeWeight(placements, area, difficulty)`：根据难度生成生成权重
+- `getLineBaseScore(lines)`：按 `100 × lines² + 100` 计算消除基础分
+- `getComboMultiplier(combo)`：按 1.0 / 1.2 / 1.3 / 1.5 计算连击倍率
+- `getLineClearScore(lines, combo)`：基础分 × 连击倍率
 
 ### `js/render.js`
 - DOM 渲染函数：方块绘制、高亮、当前分数/最高分显示
@@ -121,7 +124,7 @@
 ### `js/board.js`
 - 游戏初始化：`init()`、`fillTray()` 填充方块
 - 棋盘操作：`placeShape()`、`checkLines()`、`checkGameOver()`
-- 计分：`addScore()`，处理难度倍率；当前分数超过最高分时立即持久化（Demo 模式除外）
+- 计分：`checkLines()` 统计完整行/列，更新连击并调用 `addScore()`；`addScore()` 处理难度倍率，当前分数超过最高分时立即持久化（Demo 模式除外）
 
 ### `js/tutorial.js`
 - Demo 教学系统：`DEMO_SCENES`（5 个场景）、`applyScene()`、`playScene()`
@@ -155,8 +158,8 @@
     → onDragMove + highlightBoard (render.js)
       → onDragEnd (drag.js)
         → canPlaceShape? (logic.js)
-          → placeShape + addScore (board.js)
-            → checkLines (board.js)
+          → placeShape (board.js)
+            → checkLines + addScore (board.js)
               → fillTray (board.js) — 自适应权重生成
                 → checkGameOver (board.js)
 ```
@@ -170,13 +173,22 @@
 
 ## 计分规则
 
-| 事件 | 分值 | 备注 |
-|------|------|------|
-| 放置一个格子 | `SCORE_BLOCK` (10) × 格子数 | 乘难度倍率 |
-| 消除一行/一列 | `SCORE_LINE` (100) | 乘难度倍率 |
-| 多行/多列同时消除 | 额外 `(lines-1) × SCORE_MULTI_MULTIPLIER` (50) | 乘难度倍率 |
+- 放置方块本身不得分。
+- 一行或一列计为 1line；完整行数 + 完整列数即为本次消除的 `lines`，交叉点不重复计数。
+- 基础分：`100 × lines² + 100`
+  - 1line = 200，2line = 500，3line = 1000，4line = 1700
+- 连击倍率：第 1 次 1.0，第 2 次 1.2，第 3 次 1.3，第 4 次及以上 1.5
+- 消除分：`基础分 × 连击倍率`
+- 一次放置无论同时消除几行，只增加 1 次连击；放置后未消除则连击归零。
+- 重启、切换难度、进入 Demo 时连击归零。
+- 难度倍率仍生效：SIMPLE=0.7, STANDARD=1.0, CHALLENGE=1.5，最终得分向下取整。
 
-难度倍率：SIMPLE=0.7, STANDARD=1.0, CHALLENGE=1.5
+| 同时消除 | 第1次 | 第2次 | 第3次 | 第4次+ |
+|---------|-------|-------|-------|--------|
+| 1line | 200 | 240 | 260 | 300 |
+| 2line | 500 | 600 | 650 | 750 |
+| 3line | 1000 | 1200 | 1300 | 1500 |
+| 4line | 1700 | 2040 | 2210 | 2550 |
 
 ---
 
@@ -223,7 +235,7 @@ npx serve .
 
 ### 命名
 - `var` / `function` 全小驼峰（camelCase）
-- 常量全大写下划线（`SCORE_LINE`）
+- 常量全大写下划线（`SCORE_LINE_UNIT`）
 - CSS class 短横线（`diff-btn`、`attr-glacio-bg`）
 - DOM id 小驼峰（`currentScore`、`highScore`）
 
@@ -235,6 +247,7 @@ npx serve .
 - `boardEl`, `traySlots`, `draggedElement`, 等 DOM 引用与拖拽状态 (elements.js)
 - `onDragStart` / `onDragEnd` (drag.js)
 - `canPlaceShape`, `getShapePlacements`, `placementsOverlap`, `canPlaceAllThree`, `getShapeWeight` (logic.js)
+- `getLineBaseScore`, `getComboMultiplier`, `getLineClearScore` (logic.js)
 - `init`, `fillTray`, `placeShape`, `checkLines`, `checkGameOver`, `addScore` (board.js)
 - `DEMO_SCENES`, `applyScene`, `playScene` 等教学函数 (tutorial.js)
 - `renderShapeInSlot`, `showToast`, `highlightBoard` 等渲染函数 (render.js)

@@ -2,9 +2,9 @@
         BOARD_SIZE: 8,
         CELL_SIZE: 54,
         GAP: 2,
-        SCORE_BLOCK: 10,
-        SCORE_LINE: 100,
-        SCORE_MULTI_MULTIPLIER: 50
+        SCORE_LINE_UNIT: 100,
+        SCORE_LINE_FLAT: 100,
+        COMBO_MULTIPLIERS: [1, 1.2, 1.3, 1.5]
     };
 
     var TRAY_CELL_RATIO = 0.65;

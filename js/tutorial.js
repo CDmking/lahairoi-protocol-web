@@ -122,6 +122,7 @@
         if (index < 0 || index >= DEMO_SCENES.length) return;
         gameOverOverlay.style.display = 'none';
         state.score = 0;
+        state.combo = 0;
         updateScoreDisplay();
 
         fillBoardForScene(index);

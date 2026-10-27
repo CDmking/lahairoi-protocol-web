@@ -85,3 +85,18 @@
             case 'hard':   return Math.pow(p, 0.3) * area;
         }
     }
+
+    function getLineBaseScore(lines) {
+        if (lines <= 0) return 0;
+        return CONFIG.SCORE_LINE_UNIT * lines * lines + CONFIG.SCORE_LINE_FLAT;
+    }
+
+    function getComboMultiplier(combo) {
+        var index = Math.min(Math.max(combo, 1), CONFIG.COMBO_MULTIPLIERS.length) - 1;
+        return CONFIG.COMBO_MULTIPLIERS[index];
+    }
+
+    function getLineClearScore(lines, combo) {
+        if (lines <= 0) return 0;
+        return getLineBaseScore(lines) * getComboMultiplier(combo);
+    }

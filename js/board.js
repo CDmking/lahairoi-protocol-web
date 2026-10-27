@@ -11,6 +11,7 @@
             return Array(CONFIG.BOARD_SIZE).fill(null);
         });
         state.score = 0;
+        state.combo = 0;
         state.isGameOver = false;
 
         updateScoreDisplay();
@@ -129,7 +130,6 @@
     function placeShape(shapeData, startX, startY) {
         var matrix = shapeData.matrix;
         var attr = shapeData.attribute;
-        var blocksPlaced = 0;
 
         for (var py = 0; py < matrix.length; py++) {
             for (var px = 0; px < matrix[0].length; px++) {
@@ -137,7 +137,6 @@
                     var bX = startX + px;
                     var bY = startY + py;
                     state.board[bY][bX] = { attrId: attr.id, icon: attr.icon };
-                    blocksPlaced++;
 
                     var cellIndex = bY * CONFIG.BOARD_SIZE + bX;
                     var cellEl = boardEl.children[cellIndex];
@@ -146,12 +145,12 @@
                 }
             }
         }
-        addScore(blocksPlaced * CONFIG.SCORE_BLOCK);
     }
 
     function checkLines() {
         var clearedSet = {};
         var cellsToClear = [];
+        var linesCleared = 0;
 
         function addCell(cell) {
             var key = cell.x + ',' + cell.y;
@@ -167,6 +166,7 @@
                 if (state.board[y][x] !== null) rowData.push({ x: x, y: y, attrId: state.board[y][x].attrId });
             }
             if (rowData.length === CONFIG.BOARD_SIZE) {
+                linesCleared++;
                 rowData.forEach(addCell);
             }
         }
@@ -177,15 +177,12 @@
                 if (state.board[cy][cx] !== null) colData.push({ x: cx, y: cy, attrId: state.board[cy][cx].attrId });
             }
             if (colData.length === CONFIG.BOARD_SIZE) {
+                linesCleared++;
                 colData.forEach(addCell);
             }
         }
 
         if (cellsToClear.length > 0) {
-            var linesCleared = cellsToClear.length / CONFIG.BOARD_SIZE;
-            var clearScore = CONFIG.SCORE_LINE * linesCleared;
-            if (linesCleared > 1) clearScore += (linesCleared - 1) * CONFIG.SCORE_MULTI_MULTIPLIER;
-
             cellsToClear.forEach(function (cell) {
                 state.board[cell.y][cell.x] = null;
 
@@ -199,8 +196,11 @@
             });
 
             if (!state.isDemoMode) {
-                addScore(Math.floor(clearScore));
+                state.combo += 1;
+                addScore(getLineClearScore(linesCleared, state.combo));
             }
+        } else if (!state.isDemoMode) {
+            state.combo = 0;
         }
     }
 
