@@ -34,43 +34,92 @@
         if (!isEmpty && !force) return;
 
         var diff = state.difficulty;
+        var candidates = [];
+        var emptyCells = 0;
 
-        var weightItems = [];
-        var totalWeight = 0;
+        for (var y = 0; y < CONFIG.BOARD_SIZE; y++) {
+            for (var x = 0; x < CONFIG.BOARD_SIZE; x++) {
+                if (state.board[y][x] === null) emptyCells++;
+            }
+        }
+
         for (var s = 0; s < SHAPES_ALL.length; s++) {
             var matrix = SHAPES_ALL[s];
-            var placements = countPlacements(matrix);
+            var placements = getShapePlacements(matrix);
+            if (placements.length === 0) continue;
+
             var area = 0;
             for (var r = 0; r < matrix.length; r++) {
                 for (var c = 0; c < matrix[r].length; c++) {
                     area += matrix[r][c];
                 }
             }
-            var w = getShapeWeight(placements, area, diff);
-            if (w > 0) {
-                weightItems.push({ idx: s, w: w });
-                totalWeight += w;
-            }
+
+            var w = getShapeWeight(placements.length, area, diff);
+            candidates.push({ idx: s, w: w, placements: placements });
         }
 
-        for (var i = 0; i < 3; i++) {
-            var chosenMatrix;
-            if (totalWeight === 0) {
-                chosenMatrix = SHAPES_ALL[Math.floor(Math.random() * SHAPES_ALL.length)];
-            } else {
-                var rand = Math.random() * totalWeight;
-                var cum = 0;
-                for (var wi = 0; wi < weightItems.length; wi++) {
-                    cum += weightItems[wi].w;
-                    if (rand <= cum) {
-                        chosenMatrix = SHAPES_ALL[weightItems[wi].idx];
-                        break;
+        var batches = [];
+        var totalWeight = 0;
+
+        if (emptyCells >= 3) {
+            for (var a = 0; a < candidates.length; a++) {
+                var ca = candidates[a];
+                for (var b = a; b < candidates.length; b++) {
+                    var cb = candidates[b];
+                    for (var c = b; c < candidates.length; c++) {
+                        var cc = candidates[c];
+                        if (!canPlaceAllThree(ca.placements, cb.placements, cc.placements)) continue;
+
+                        var permutations;
+                        if (a === b && b === c) {
+                            permutations = 1;
+                        } else if (a === b || b === c) {
+                            permutations = 3;
+                        } else {
+                            permutations = 6;
+                        }
+
+                        var comboWeight = Math.pow(ca.w * cb.w * cc.w, 1 / 3) * permutations;
+                        batches.push({ ids: [ca.idx, cb.idx, cc.idx], weight: comboWeight });
+                        totalWeight += comboWeight;
                     }
                 }
             }
+        }
 
+        if (batches.length === 0) {
+            for (var e = 0; e < 3; e++) {
+                state.availableShapes[e] = null;
+                renderShapeInSlot(null, e);
+            }
+            checkGameOver();
+            return;
+        }
+
+        var chosen = batches[batches.length - 1];
+        var rand = Math.random() * totalWeight;
+        var cum = 0;
+        for (var bi = 0; bi < batches.length; bi++) {
+            cum += batches[bi].weight;
+            if (rand <= cum) {
+                chosen = batches[bi];
+                break;
+            }
+        }
+
+        var order = chosen.ids.slice();
+        for (var oi = order.length - 1; oi > 0; oi--) {
+            var swapIndex = Math.floor(Math.random() * (oi + 1));
+            var tmp = order[oi];
+            order[oi] = order[swapIndex];
+            order[swapIndex] = tmp;
+        }
+
+        for (var i = 0; i < 3; i++) {
+            var shapeMatrix = SHAPES_ALL[order[i]];
             var randomAttr = ATTRIBUTES[Math.floor(Math.random() * ATTRIBUTES.length)];
-            var shapeData = { matrix: chosenMatrix, attribute: randomAttr };
+            var shapeData = { matrix: shapeMatrix, attribute: randomAttr };
             state.availableShapes[i] = shapeData;
             renderShapeInSlot(shapeData, i);
         }

@@ -96,6 +96,9 @@
 ### `js/logic.js`
 - `canPlaceShape(matrix, startX, startY)`：方块能否放置
 - `countPlacements(matrix)`：某方块在棋盘上合法放置数
+- `getShapePlacements(matrix)`：返回所有合法放置位置的 64 位位图列表
+- `placementsOverlap(a, b)`：判断两个放置位图是否重叠
+- `canPlaceAllThree(listA, listB, listC)`：判断 3 个方块能否同时放入当前空位
 - `getShapeWeight(placements, area, difficulty)`：根据难度生成生成权重
 
 ### `js/render.js`
@@ -179,13 +182,22 @@
 
 ## 自适应方块生成算法
 
-`fillTray()` 根据棋盘实时空位计算权重：
-1. 遍历所有 32 种形状，调用 `countPlacements()` 统计合法放置数
-2. 按难度调用 `getShapeWeight()` 计算权重
+`fillTray()` 保证每批 3 个方块都能同时放入当前空位（忽略放置过程中的行列消除）：
+
+1. 遍历所有 32 种形状，用 `getShapePlacements()` 获取当前合法放置位置
+   - 过滤掉 `placements === 0` 的形状
+   - `p = placements + 1`，`area` 为方块占用的格子数
+2. 按难度调用 `getShapeWeight()` 计算单个形状权重
    - **SIMPLE**：`p²/area` — 倾向小块、高放置数
    - **STANDARD**：`p` — 线性权重
    - **CHALLENGE**：`p^0.3 × area` — 倾向大块、低放置数
-3. 按权重随机选取，确保总有可用方块
+3. 枚举所有无序组合 `a ≤ b ≤ c`（允许重复），用 `canPlaceAllThree()` 判断联合可放置
+4. 组合权重取三个形状权重的几何平均，再乘以该组合的排列数（1/3/6）
+   - 概率模型等价于 `N³` 有序三元组（`N` 为当前可放置形状数，最大 32）
+5. 按组合总权重随机抽取，再将选中的 3 个形状随机分配到托盘槽位
+6. 元素属性仍独立随机；棋盘空位少于 3 个时不存在合法组合，直接判定游戏结束
+
+最多进行 `C(34, 3) = 5984` 次联合可放置判定；通过乘以排列数计入顺序，避免 `32³ = 32768` 次重复判定。
 
 ---
 
@@ -222,6 +234,7 @@ npx serve .
 - `state` (state.js)
 - `boardEl`, `traySlots`, `draggedElement`, 等 DOM 引用与拖拽状态 (elements.js)
 - `onDragStart` / `onDragEnd` (drag.js)
+- `canPlaceShape`, `getShapePlacements`, `placementsOverlap`, `canPlaceAllThree`, `getShapeWeight` (logic.js)
 - `init`, `fillTray`, `placeShape`, `checkLines`, `checkGameOver`, `addScore` (board.js)
 - `DEMO_SCENES`, `applyScene`, `playScene` 等教学函数 (tutorial.js)
 - `renderShapeInSlot`, `showToast`, `highlightBoard` 等渲染函数 (render.js)
