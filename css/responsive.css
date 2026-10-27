@@ -70,6 +70,12 @@
         font-size: 16px;
     }
 
+    .game-terminal .clear-highscore-btn {
+        font-size: 8px;
+        padding: 1px 5px;
+        margin-top: 2px;
+    }
+
     .game-terminal .tray-slot {
         height: 70px;
     }

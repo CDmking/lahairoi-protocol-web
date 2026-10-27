@@ -68,8 +68,20 @@
         } catch (e) { }
     }
 
+    function clearHighScore() {
+        state.highScore = 0;
+        try {
+            localStorage.removeItem(HIGH_SCORE_KEY);
+            localStorage.removeItem(LEGACY_LEADERBOARD_KEY);
+        } catch (e) { }
+        updateHighScoreDisplay();
+    }
+
     function updateHighScoreDisplay() {
         highScoreEl.innerText = state.highScore;
+        if (clearHighScoreBtn) {
+            clearHighScoreBtn.disabled = state.highScore <= 0;
+        }
     }
 
     function renderShapeInSlot(shapeData, slotIndex) {

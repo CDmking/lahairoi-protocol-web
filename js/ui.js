@@ -25,12 +25,20 @@
 
         helpBtn = document.getElementById('helpBtn');
         fullscreenBtn = document.getElementById('fullscreenBtn');
+        clearHighScoreBtn = document.getElementById('clearHighScoreBtn');
 
         initBgm();
 
         if (!eventsBound) {
             initFullscreen();
             restartBtn.addEventListener('click', init);
+
+            clearHighScoreBtn.addEventListener('click', function () {
+                if (state.highScore <= 0) return;
+                if (!window.confirm('确定要清除最高分吗？此操作不可撤销。')) return;
+                clearHighScore();
+                showToast('最高分已清除');
+            });
 
             var diffBtns = document.querySelectorAll('.diff-btn');
             for (var di = 0; di < diffBtns.length; di++) {

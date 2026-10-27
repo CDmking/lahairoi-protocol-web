@@ -181,6 +181,32 @@
     text-shadow: 0 0 10px rgba(255,255,255,0.5);
 }
 
+.game-terminal .clear-highscore-btn {
+    align-self: flex-end;
+    margin-top: 3px;
+    background: transparent;
+    color: rgba(255,255,255,0.35);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 2px 8px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+
+.game-terminal .clear-highscore-btn:hover:not(:disabled) {
+    color: var(--danger-color);
+    border-color: rgba(255, 0, 85, 0.5);
+    background: rgba(255, 0, 85, 0.1);
+}
+
+.game-terminal .clear-highscore-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
 .game-terminal .attr-glacio-bg { background-color: var(--attr-glacio); box-shadow: 0 0 8px var(--attr-glacio); }
 .game-terminal .attr-fusion-bg { background-color: var(--attr-fusion); box-shadow: 0 0 8px var(--attr-fusion); }
 .game-terminal .attr-electro-bg { background-color: var(--attr-electro); box-shadow: 0 0 8px var(--attr-electro); }

@@ -12,7 +12,7 @@
 - **6 种元素属性**：Glacio(冷凝) / Fusion(热熔) / Electro(导电) / Aero(气动) / Spectro(衍射) / Havoc(湮灭)
 - **三档难度**：SIMPLE / STANDARD / CHALLENGE
 - **Demo 教学**：5 个内置场景演示
-- **最高分**：localStorage 持久化当前历史最高分
+- **最高分**：localStorage 持久化当前历史最高分，支持手动清除
 
 **技术栈**：纯静态 HTML5 + CSS3 + Vanilla JS（零依赖）
 
@@ -102,6 +102,8 @@
 - DOM 渲染函数：方块绘制、高亮、当前分数/最高分显示
 - `renderShapeInSlot(shapeData, slotIndex)`：在托盘槽中渲染形状
 - `loadHighScore()` / `saveHighScore()`：最高分 localStorage 读写与旧数据迁移
+- `clearHighScore()`：重置 `state.highScore` 并删除本地最高分记录
+- `updateHighScoreDisplay()`：更新最高分显示，并同步清除按钮的禁用状态
 - `showToast(message)`：底部提示消息
 
 ### `js/elements.js`
@@ -134,7 +136,7 @@
 
 ### `js/ui.js`
 - `initGame()`：获取 DOM 引用并绑定所有事件
-- Demo 导航、重启、全屏与窗口缩放事件
+- Demo 导航、重启、全屏、清除最高分与窗口缩放事件
 - `setDifficulty()`：难度切换与按钮状态同步
 
 ### `js/game.js`
@@ -259,7 +261,8 @@ npx serve .
 
 ### 修改最高分存储结构
 1. 更新 `render.js` 的 `HIGH_SCORE_KEY` 与 `loadHighScore()` / `saveHighScoreValue()`
-2. 如需兼容旧格式，同步更新 `loadHighScore()` 的迁移逻辑
+2. 同步检查 `clearHighScore()` 的清除逻辑
+3. 如需兼容旧格式，同步更新 `loadHighScore()` 的迁移逻辑
 
 ---
 

@@ -1,5 +1,5 @@
     var boardEl, traySlots, currentScoreEl, highScoreEl, gameOverOverlay, restartBtn;
-    var toastBox, helpBtn, fullscreenBtn;
+    var toastBox, helpBtn, fullscreenBtn, clearHighScoreBtn;
     var draggedElement = null;
     var draggedShapeData = null;
     var draggedSlotIndex = -1;
