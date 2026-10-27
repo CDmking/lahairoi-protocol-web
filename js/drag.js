@@ -53,11 +53,11 @@
         clearBoardHighlight();
 
         if (boardPos && canPlaceShape(draggedShapeData.matrix, boardPos.x, boardPos.y)) {
-            placeShape(draggedShapeData, boardPos.x, boardPos.y);
+            var clearOrigin = placeShape(draggedShapeData, boardPos.x, boardPos.y);
             state.availableShapes[draggedSlotIndex] = null;
             draggedElement.remove();
 
-            checkLines();
+            checkLines(clearOrigin);
             fillTray();
             checkGameOver();
 

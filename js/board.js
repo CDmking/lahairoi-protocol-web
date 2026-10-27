@@ -129,6 +129,9 @@
     function placeShape(shapeData, startX, startY) {
         var matrix = shapeData.matrix;
         var attr = shapeData.attribute;
+        var sumX = 0;
+        var sumY = 0;
+        var placedCount = 0;
 
         for (var py = 0; py < matrix.length; py++) {
             for (var px = 0; px < matrix[0].length; px++) {
@@ -139,17 +142,36 @@
 
                     var cellIndex = bY * CONFIG.BOARD_SIZE + bX;
                     var cellEl = boardEl.children[cellIndex];
+                    cellEl._clearToken = (cellEl._clearToken || 0) + 1;
                     cellEl.className = 'cell filled attr-' + attr.id;
                     cellEl.innerHTML = attr.icon;
+                    cellEl.style.removeProperty('--clear-delay');
+                    cellEl.style.removeProperty('--clear-duration');
+
+                    sumX += bX;
+                    sumY += bY;
+                    placedCount++;
                 }
             }
         }
+
+        return {
+            x: sumX / placedCount,
+            y: sumY / placedCount
+        };
     }
 
-    function checkLines() {
+    function checkLines(origin) {
         var clearedSet = {};
         var cellsToClear = [];
         var linesCleared = 0;
+
+        if (!origin) {
+            origin = {
+                x: (CONFIG.BOARD_SIZE - 1) / 2,
+                y: (CONFIG.BOARD_SIZE - 1) / 2
+            };
+        }
 
         function addCell(cell) {
             var key = cell.x + ',' + cell.y;
@@ -186,12 +208,21 @@
                 state.board[cell.y][cell.x] = null;
 
                 var cellEl = boardEl.children[cell.y * CONFIG.BOARD_SIZE + cell.x];
+                var distance = Math.max(Math.abs(cell.x - origin.x), Math.abs(cell.y - origin.y));
+                var delay = CONFIG.CLEAR_HOLD_MS + Math.round(distance * CONFIG.CLEAR_STAGGER_MS);
+                var token = (cellEl._clearToken || 0) + 1;
+                cellEl._clearToken = token;
                 cellEl.className = 'cell clearing';
                 cellEl.innerHTML = '';
+                cellEl.style.setProperty('--clear-delay', delay + 'ms');
+                cellEl.style.setProperty('--clear-duration', CONFIG.CLEAR_DURATION_MS + 'ms');
 
                 setTimeout(function () {
+                    if (cellEl._clearToken !== token) return;
                     cellEl.classList.remove('clearing');
-                }, 300);
+                    cellEl.style.removeProperty('--clear-delay');
+                    cellEl.style.removeProperty('--clear-duration');
+                }, delay + CONFIG.CLEAR_DURATION_MS + 20);
             });
 
             if (!state.isDemoMode) {

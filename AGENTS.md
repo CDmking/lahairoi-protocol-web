@@ -77,7 +77,7 @@
 - `base.css`：重置、`:root` 变量、`.game-terminal`、终端容器、页脚、属性图标
 - `header.css`：帮助/全屏/音乐按钮、标题、分数、难度选择
 - `board.css`：游戏区、棋盘、格子状态、托盘、拖拽方块
-- `overlays.css`：Toast、游戏结束遮罩、消除动画
+- `overlays.css`：Toast、游戏结束遮罩、消除动画（白色内芯收缩 + 外圈扩散）
 - `tutorial.css`：Demo 覆盖层、面板、导航、播放按钮、拖拽幽灵
 - `responsive.css`：全部 `@media` 断点，必须最后加载以覆盖基础样式
 
@@ -86,7 +86,7 @@
 - `SHAPES_ALL`：从 `SHAPES_DATA.shapes` 提取的 32 种二维 0/1 矩阵
 
 ### `js/config.js`
-- `CONFIG` 对象：棋盘大小、格子尺寸、计分常量与连击倍率
+- `CONFIG` 对象：棋盘大小、格子尺寸、计分常量、连击倍率与消除动画时序
 - `ATTRIBUTES`：6 种元素定义（id + SVG icon HTML）
 - `DIFFICULTY_CONFIG`：三档难度倍率
 - `recalcLayout()`：根据窗口尺寸动态计算格子大小
@@ -124,7 +124,8 @@
 
 ### `js/board.js`
 - 游戏初始化：`init()`、`fillTray()` 填充方块
-- 棋盘操作：`placeShape()`、`checkLines()`、`checkGameOver()`
+- 棋盘操作：`placeShape()`（返回触发形状中心）、`checkLines(origin)`、`checkGameOver()`
+- 消除动画：`checkLines()` 以触发形状中心为波源，按切比雪夫距离为每个待消除格设置 `--clear-delay`；每格独立播放白色内芯收缩与外圈扩散
 - 计分：`checkLines()` 统计完整行/列，更新连击并调用 `addScore()`；`addScore()` 处理难度倍率，当前分数超过最高分时立即持久化（Demo 模式除外）
 
 ### `js/tutorial.js`

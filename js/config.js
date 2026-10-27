@@ -4,7 +4,10 @@
         GAP: 2,
         SCORE_LINE_UNIT: 100,
         SCORE_LINE_FLAT: 100,
-        COMBO_MULTIPLIERS: [1, 1.2, 1.3, 1.5]
+        COMBO_MULTIPLIERS: [1, 1.2, 1.3, 1.5],
+        CLEAR_HOLD_MS: 60,
+        CLEAR_STAGGER_MS: 40,
+        CLEAR_DURATION_MS: 420
     };
 
     var TRAY_CELL_RATIO = 0.65;

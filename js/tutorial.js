@@ -188,12 +188,12 @@
             animateShapeToBoard(shapeData, slotIdx, targetX, targetY, function () {
                 if (savedVersion !== sceneVersion) return;
                 if (!state.isDemoMode) return;
-                placeShape(shapeData, targetX, targetY);
+                var clearOrigin = placeShape(shapeData, targetX, targetY);
                 updateScoreDisplay();
                 setTimeout(function () {
                     if (savedVersion !== sceneVersion) return;
                     if (!state.isDemoMode) return;
-                    checkLines();
+                    checkLines(clearOrigin);
                     updateScoreDisplay();
 
                     setDemoPlayButton(true);
