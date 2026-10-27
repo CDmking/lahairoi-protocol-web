@@ -1,13 +1,23 @@
+    var toastTimer = null;
+
     function showToast(message) {
         toastBox.innerText = message;
         toastBox.classList.add('show');
-        setTimeout(function () {
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
             toastBox.classList.remove('show');
+            toastTimer = null;
         }, 2500);
     }
 
     var HIGH_SCORE_KEY = 'lahairoi_v3_highscore';
     var LEGACY_LEADERBOARD_KEY = 'lahairoi_v3_leaderboard';
+
+    function migrateLegacyHighScore() {
+        var legacy = readLegacyHighScore();
+        if (legacy > 0) saveHighScoreValue(legacy);
+        return legacy;
+    }
 
     function loadHighScore() {
         var highScore = 0;
@@ -19,16 +29,10 @@
                     highScore = parsed.highScore;
                 }
             } else {
-                highScore = readLegacyHighScore();
-                if (highScore > 0) {
-                    saveHighScoreValue(highScore);
-                }
+                highScore = migrateLegacyHighScore();
             }
         } catch (e) {
-            highScore = readLegacyHighScore();
-            if (highScore > 0) {
-                saveHighScoreValue(highScore);
-            }
+            highScore = migrateLegacyHighScore();
         }
 
         try {
@@ -53,7 +57,7 @@
                 }
             }
         } catch (e) {
-            highScore = 0;
+            return 0;
         }
         return highScore;
     }
@@ -84,13 +88,41 @@
         }
     }
 
+    function buildShapeCellsHTML(matrix, attribute) {
+        var cells = '';
+        for (var sy = 0; sy < matrix.length; sy++) {
+            for (var sx = 0; sx < matrix[sy].length; sx++) {
+                if (matrix[sy][sx] === 1) {
+                    cells += '<div class="shape-cell">' + attribute.icon + '</div>';
+                } else {
+                    cells += '<div class="shape-cell empty"></div>';
+                }
+            }
+        }
+        return cells;
+    }
+
+    function applyShapeGrid(el, matrix, size) {
+        var rows = matrix.length;
+        var cols = matrix[0].length;
+        el.style.gridTemplateColumns = 'repeat(' + cols + ', ' + size + 'px)';
+        el.style.gridTemplateRows = 'repeat(' + rows + ', ' + size + 'px)';
+        el.style.setProperty('--cell-size', size + 'px');
+    }
+
+    function centerShapeElement(el, matrix, size) {
+        var rows = matrix.length;
+        var cols = matrix[0].length;
+        el.style.left = 'calc(50% - ' + (cols * size + (cols - 1) * CONFIG.GAP) / 2 + 'px)';
+        el.style.top = 'calc(50% - ' + (rows * size + (rows - 1) * CONFIG.GAP) / 2 + 'px)';
+    }
+
     function renderShapeInSlot(shapeData, slotIndex) {
         var slotEl = traySlots[slotIndex];
         slotEl.innerHTML = '';
         if (!shapeData) return;
 
         var matrix = shapeData.matrix;
-        var attr = shapeData.attribute;
         var rows = matrix.length;
         var cols = matrix[0].length;
 
@@ -102,25 +134,14 @@
             Math.floor((slotW - 8 - (cols - 1) * CONFIG.GAP) / cols)
         );
         cellSize = Math.max(12, cellSize);
-        shapeData._trayCellSize = cellSize;
-
-        var cells = '';
-        for (var sy = 0; sy < rows; sy++) {
-            for (var sx = 0; sx < cols; sx++) {
-                var isFilled = matrix[sy][sx] === 1;
-                var cls = isFilled ? 'shape-cell attr-' + attr.id + '-bg' : 'shape-cell empty';
-                var sty = isFilled ? ' style="box-shadow:inset 0 0 5px rgba(255,255,255,0.8),0 0 10px var(--attr-' + attr.id + ')"' : '';
-                var inner = isFilled ? attr.icon : '';
-                cells += '<div class="' + cls + '"' + sty + '>' + inner + '</div>';
-            }
-        }
 
         var shapeEl = document.createElement('div');
         shapeEl.className = 'shape-element';
-        shapeEl.style.cssText = 'grid-template-columns:repeat(' + cols + ',' + cellSize + 'px);grid-template-rows:repeat(' + rows + ',' + cellSize + 'px);--cell-size:' + cellSize + 'px;left:calc(50% - ' + (cols * cellSize + (cols - 1) * CONFIG.GAP) / 2 + 'px);top:calc(50% - ' + (rows * cellSize + (rows - 1) * CONFIG.GAP) / 2 + 'px)';
+        applyShapeGrid(shapeEl, matrix, cellSize);
+        centerShapeElement(shapeEl, matrix, cellSize);
         shapeEl.dataset.slotIndex = slotIndex;
         shapeEl.shapeData = shapeData;
-        shapeEl.innerHTML = cells;
+        shapeEl.innerHTML = buildShapeCellsHTML(matrix, shapeData.attribute);
         shapeEl.addEventListener('mousedown', onDragStart);
         shapeEl.addEventListener('touchstart', onDragStart, { passive: false });
 
@@ -128,11 +149,7 @@
     }
 
     function setShapeGrid(size) {
-        var m = draggedShapeData.matrix;
-        var c = m[0].length, r = m.length;
-        draggedElement.style.gridTemplateColumns = 'repeat(' + c + ', ' + size + 'px)';
-        draggedElement.style.gridTemplateRows = 'repeat(' + r + ', ' + size + 'px)';
-        draggedElement.style.setProperty('--cell-size', size + 'px');
+        applyShapeGrid(draggedElement, draggedShapeData.matrix, size);
     }
 
     function highlightBoard(clientX, clientY) {

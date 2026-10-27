@@ -30,6 +30,7 @@
         initBgm();
 
         if (!eventsBound) {
+            buildDemoDots();
             initFullscreen();
             restartBtn.addEventListener('click', init);
 
@@ -56,17 +57,15 @@
 
             document.getElementById('demoPrevBtn').addEventListener('click', function () {
                 if (currentScene > 0) {
-                    if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
                     applyScene(currentScene - 1);
-                    autoPlayTimer = setTimeout(playScene, 1000);
+                    scheduleAutoPlay(1000);
                 }
             });
 
             document.getElementById('demoNextBtn').addEventListener('click', function () {
                 if (currentScene < DEMO_SCENES.length - 1) {
-                    if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
                     applyScene(currentScene + 1);
-                    autoPlayTimer = setTimeout(playScene, 1000);
+                    scheduleAutoPlay(1000);
                 }
             });
 
@@ -75,7 +74,7 @@
             });
 
             document.getElementById('demoPlayBtn').addEventListener('click', function () {
-                if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
+                cancelAutoPlay();
                 applyScene(currentScene);
                 playScene();
             });
@@ -87,11 +86,10 @@
             var dots = document.querySelectorAll('.demo-dot');
             for (var dbi = 0; dbi < dots.length; dbi++) {
                 dots[dbi].addEventListener('click', function () {
-                    var idx = parseInt(this.dataset.index);
+                    var idx = parseInt(this.dataset.index, 10);
                     if (!isNaN(idx) && idx !== currentScene) {
-                        if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
                         applyScene(idx);
-                        autoPlayTimer = setTimeout(playScene, 1000);
+                        scheduleAutoPlay(1000);
                     }
                 });
             }

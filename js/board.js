@@ -1,10 +1,10 @@
     function init() {
+        if (typeof cancelDemoPlayback === 'function') cancelDemoPlayback();
         if (state.isDemoMode) {
             state.isDemoMode = false;
             var overlay = document.getElementById('demoOverlay');
             if (overlay) overlay.classList.remove('show');
         }
-        recalcLayout();
         loadHighScore();
 
         state.board = Array.from({ length: CONFIG.BOARD_SIZE }, function () {
@@ -27,6 +27,7 @@
         }
 
         fillTray(true);
+        checkGameOver();
     }
 
     function fillTray(force) {
@@ -94,7 +95,6 @@
                 state.availableShapes[e] = null;
                 renderShapeInSlot(null, e);
             }
-            checkGameOver();
             return;
         }
 
@@ -124,7 +124,6 @@
             state.availableShapes[i] = shapeData;
             renderShapeInSlot(shapeData, i);
         }
-        checkGameOver();
     }
 
     function placeShape(shapeData, startX, startY) {
@@ -136,7 +135,7 @@
                 if (matrix[py][px] === 1) {
                     var bX = startX + px;
                     var bY = startY + py;
-                    state.board[bY][bX] = { attrId: attr.id, icon: attr.icon };
+                    state.board[bY][bX] = { attrId: attr.id };
 
                     var cellIndex = bY * CONFIG.BOARD_SIZE + bX;
                     var cellEl = boardEl.children[cellIndex];
@@ -161,24 +160,24 @@
         }
 
         for (var y = 0; y < CONFIG.BOARD_SIZE; y++) {
-            var rowData = [];
+            var rowCells = [];
             for (var x = 0; x < CONFIG.BOARD_SIZE; x++) {
-                if (state.board[y][x] !== null) rowData.push({ x: x, y: y, attrId: state.board[y][x].attrId });
+                if (state.board[y][x] !== null) rowCells.push({ x: x, y: y });
             }
-            if (rowData.length === CONFIG.BOARD_SIZE) {
+            if (rowCells.length === CONFIG.BOARD_SIZE) {
                 linesCleared++;
-                rowData.forEach(addCell);
+                rowCells.forEach(addCell);
             }
         }
 
         for (var cx = 0; cx < CONFIG.BOARD_SIZE; cx++) {
-            var colData = [];
+            var colCells = [];
             for (var cy = 0; cy < CONFIG.BOARD_SIZE; cy++) {
-                if (state.board[cy][cx] !== null) colData.push({ x: cx, y: cy, attrId: state.board[cy][cx].attrId });
+                if (state.board[cy][cx] !== null) colCells.push({ x: cx, y: cy });
             }
-            if (colData.length === CONFIG.BOARD_SIZE) {
+            if (colCells.length === CONFIG.BOARD_SIZE) {
                 linesCleared++;
-                colData.forEach(addCell);
+                colCells.forEach(addCell);
             }
         }
 
@@ -191,7 +190,7 @@
                 cellEl.innerHTML = '';
 
                 setTimeout(function () {
-                    cellEl.className = 'cell';
+                    cellEl.classList.remove('clearing');
                 }, 300);
             });
 

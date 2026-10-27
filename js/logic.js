@@ -12,16 +12,6 @@
         return true;
     }
 
-    function countPlacements(matrix) {
-        var count = 0;
-        for (var y = 0; y < CONFIG.BOARD_SIZE; y++) {
-            for (var x = 0; x < CONFIG.BOARD_SIZE; x++) {
-                if (canPlaceShape(matrix, x, y)) count++;
-            }
-        }
-        return count;
-    }
-
     function getShapePlacements(matrix) {
         var placements = [];
         for (var y = 0; y < CONFIG.BOARD_SIZE; y++) {
@@ -81,8 +71,8 @@
         var p = placements + 1;
         switch (difficulty) {
             case 'easy':   return Math.pow(p, 2) / area;
-            case 'normal': return p;
             case 'hard':   return Math.pow(p, 0.3) * area;
+            default:       return p;
         }
     }
 
@@ -97,6 +87,5 @@
     }
 
     function getLineClearScore(lines, combo) {
-        if (lines <= 0) return 0;
         return getLineBaseScore(lines) * getComboMultiplier(combo);
     }

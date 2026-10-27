@@ -18,7 +18,7 @@
                  [0,4],[1,4],[2,4],[4,4],[5,4],[6,4],[7,4]],
           shapeMatrix:[[1]], target:[3,4],
           desc:'内部交叉点填满可同时消除行与列' },
-        { name:'游戏结束', fills:null, except:[[0,0],[1,3],[2,6],[3,1],[4,4],[5,7],[6,2],[7,5]],
+        { name:'游戏结束', type:'gameover', fills:null, except:[[0,0],[1,3],[2,6],[3,1],[4,4],[5,7],[6,2],[7,5]],
           shapeMatrix:[[1,1,1],[1,1,1],[1,1,1]], target:[0,0],
           desc:'空缺位置分散，无合适空间容纳更大方块' }
     ];
@@ -27,29 +27,52 @@
     var sceneVersion = 0;
     var autoPlayTimer = null;
 
+    function cancelAutoPlay() {
+        if (autoPlayTimer) {
+            clearTimeout(autoPlayTimer);
+            autoPlayTimer = null;
+        }
+    }
+
+    function scheduleAutoPlay(delay) {
+        cancelAutoPlay();
+        autoPlayTimer = setTimeout(playScene, delay);
+    }
+
+    function cancelDemoPlayback() {
+        cancelAutoPlay();
+        sceneVersion++;
+    }
+
+    function setDemoPlayButton(enabled) {
+        var playBtn = document.getElementById('demoPlayBtn');
+        playBtn.innerHTML = '重播';
+        playBtn.disabled = !enabled;
+    }
+
+    function buildDemoDots() {
+        var container = document.getElementById('demoDots');
+        if (!container) return;
+        container.innerHTML = '';
+        for (var i = 0; i < DEMO_SCENES.length; i++) {
+            var dot = document.createElement('span');
+            dot.className = 'demo-dot' + (i === 0 ? ' active' : '');
+            dot.dataset.index = i;
+            container.appendChild(dot);
+        }
+    }
+
     function animateShapeToBoard(shapeData, slotIndex, targetX, targetY, callback) {
         var matrix = shapeData.matrix;
         var rows = matrix.length;
         var cols = matrix[0].length;
         var cellSize = CONFIG.CELL_SIZE;
         var gap = CONFIG.GAP;
-        var attrId = shapeData.attribute.id;
-
-        var cells = '';
-        for (var gy = 0; gy < rows; gy++) {
-            for (var gx = 0; gx < cols; gx++) {
-                if (matrix[gy][gx] === 1) {
-                    cells += '<div style="width:' + cellSize + 'px;height:' + cellSize + 'px;border-radius:2px;background-color:var(--attr-' + attrId + ');box-shadow:inset 0 0 5px rgba(255,255,255,0.8),0 0 10px var(--attr-' + attrId + ')"></div>';
-                } else {
-                    cells += '<div style="width:' + cellSize + 'px;height:' + cellSize + 'px;background:transparent"></div>';
-                }
-            }
-        }
 
         var ghost = document.createElement('div');
         ghost.className = 'demo-ghost';
-        ghost.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;display:grid;grid-template-columns:repeat(' + cols + ',' + cellSize + 'px);grid-template-rows:repeat(' + rows + ',' + cellSize + 'px);gap:' + gap + 'px;transition:all 0.28s cubic-bezier(.2,.9,.3,1)';
-        ghost.innerHTML = cells;
+        ghost.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;display:grid;grid-template-columns:repeat(' + cols + ',' + cellSize + 'px);grid-template-rows:repeat(' + rows + ',' + cellSize + 'px);gap:' + gap + 'px;--cell-size:' + cellSize + 'px;transition:all 0.28s cubic-bezier(.2,.9,.3,1)';
+        ghost.innerHTML = buildShapeCellsHTML(matrix, shapeData.attribute);
 
         var slotRect = traySlots[slotIndex].getBoundingClientRect();
         var ghostW = cols * cellSize + (cols - 1) * gap;
@@ -90,7 +113,6 @@
             }
         }
 
-        var allAttrs = ['glacio','fusion','electro','aero','spectro','havoc'];
         var fillCells = scene.fills;
         if (fillCells === null) {
             fillCells = [];
@@ -110,17 +132,18 @@
         }
         for (var fi = 0; fi < fillCells.length; fi++) {
             var fy = fillCells[fi][0], fx = fillCells[fi][1];
-            var aid = allAttrs[Math.floor(Math.random() * allAttrs.length)];
-            state.board[fy][fx] = { attrId: aid, icon: '<img src="img/attribute/' + aid.charAt(0).toUpperCase() + aid.slice(1) + '.svg" class="attr-icon">' };
+            var attr = ATTRIBUTES[Math.floor(Math.random() * ATTRIBUTES.length)];
+            state.board[fy][fx] = { attrId: attr.id };
             var cel = boardEl.children[fy * CONFIG.BOARD_SIZE + fx];
-            cel.className = 'cell filled attr-' + aid;
-            cel.innerHTML = state.board[fy][fx].icon;
+            cel.className = 'cell filled attr-' + attr.id;
+            cel.innerHTML = attr.icon;
         }
     }
 
     function applyScene(index) {
         if (index < 0 || index >= DEMO_SCENES.length) return;
         gameOverOverlay.style.display = 'none';
+        state.isGameOver = false;
         state.score = 0;
         state.combo = 0;
         updateScoreDisplay();
@@ -142,9 +165,7 @@
         var dots = document.querySelectorAll('.demo-dot');
         for (var di = 0; di < dots.length; di++) dots[di].classList.toggle('active', di === index);
 
-        var playBtn = document.getElementById('demoPlayBtn');
-        playBtn.innerHTML = '重播';
-        playBtn.disabled = true;
+        setDemoPlayButton(false);
 
         document.getElementById('demoPrevBtn').disabled = index === 0;
         document.getElementById('demoNextBtn').disabled = index === DEMO_SCENES.length - 1;
@@ -163,7 +184,7 @@
 
         var targetY = scene.target[0], targetX = scene.target[1];
 
-        if (currentScene < 4) {
+        if (scene.type !== 'gameover') {
             animateShapeToBoard(shapeData, slotIdx, targetX, targetY, function () {
                 if (savedVersion !== sceneVersion) return;
                 if (!state.isDemoMode) return;
@@ -175,9 +196,7 @@
                     checkLines();
                     updateScoreDisplay();
 
-                    var playBtn = document.getElementById('demoPlayBtn');
-                    playBtn.innerHTML = '重播';
-                    playBtn.disabled = false;
+                    setDemoPlayButton(true);
                 }, 600);
             });
         } else {
@@ -212,9 +231,7 @@
                     clearTraySlot(0);
                     checkGameOver();
 
-                    var playBtn = document.getElementById('demoPlayBtn');
-                    playBtn.innerHTML = '重播';
-                    playBtn.disabled = false;
+                    setDemoPlayButton(true);
                 }, 1500);
             });
         }
@@ -226,12 +243,10 @@
         var overlay = document.getElementById('demoOverlay');
         if (overlay) overlay.classList.add('show');
         applyScene(0);
-        if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
-        autoPlayTimer = setTimeout(playScene, 1000);
+        scheduleAutoPlay(1000);
     }
 
     function closeDemo() {
-        if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
         state.isDemoMode = false;
         var overlay = document.getElementById('demoOverlay');
         if (overlay) overlay.classList.remove('show');

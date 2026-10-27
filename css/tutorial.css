@@ -10,6 +10,7 @@
 
 .game-terminal .demo-overlay.show {
     display: block;
+    pointer-events: auto;
 }
 
 .game-terminal .demo-panel {
@@ -130,7 +131,6 @@
 
 .game-terminal .demo-ghost,
 .demo-ghost {
-    filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
     opacity: 0.95;
     z-index: 9999;
     pointer-events: none;

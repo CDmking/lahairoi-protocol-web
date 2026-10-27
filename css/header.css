@@ -206,10 +206,3 @@
     opacity: 0.35;
     cursor: default;
 }
-
-.game-terminal .attr-glacio-bg { background-color: var(--attr-glacio); box-shadow: 0 0 8px var(--attr-glacio); }
-.game-terminal .attr-fusion-bg { background-color: var(--attr-fusion); box-shadow: 0 0 8px var(--attr-fusion); }
-.game-terminal .attr-electro-bg { background-color: var(--attr-electro); box-shadow: 0 0 8px var(--attr-electro); }
-.game-terminal .attr-aero-bg { background-color: var(--attr-aero); box-shadow: 0 0 8px var(--attr-aero); }
-.game-terminal .attr-spectro-bg { background-color: var(--attr-spectro); box-shadow: 0 0 8px var(--attr-spectro); }
-.game-terminal .attr-havoc-bg { background-color: var(--attr-havoc); box-shadow: 0 0 8px var(--attr-havoc); }

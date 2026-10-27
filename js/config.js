@@ -28,6 +28,7 @@
 
         document.documentElement.style.setProperty('--cell-size', newSize + 'px');
         document.documentElement.style.setProperty('--grid-gap', CONFIG.GAP + 'px');
+        document.documentElement.style.setProperty('--board-size', CONFIG.BOARD_SIZE);
     }
 
     recalcLayout();

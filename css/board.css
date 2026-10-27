@@ -32,13 +32,6 @@
     color: rgba(0,0,0,0.5);
 }
 
-.game-terminal .cell.filled.attr-glacio { background-color: var(--attr-glacio); box-shadow: inset 0 0 10px rgba(255,255,255,0.5); }
-.game-terminal .cell.filled.attr-fusion { background-color: var(--attr-fusion); box-shadow: inset 0 0 10px rgba(255,255,255,0.5); }
-.game-terminal .cell.filled.attr-electro { background-color: var(--attr-electro); box-shadow: inset 0 0 10px rgba(255,255,255,0.5); }
-.game-terminal .cell.filled.attr-aero { background-color: var(--attr-aero); box-shadow: inset 0 0 10px rgba(255,255,255,0.5); }
-.game-terminal .cell.filled.attr-spectro { background-color: var(--attr-spectro); box-shadow: inset 0 0 10px rgba(255,255,255,0.5); }
-.game-terminal .cell.filled.attr-havoc { background-color: var(--attr-havoc); box-shadow: inset 0 0 10px rgba(255,255,255,0.5); }
-
 .game-terminal .cell.hover {
     background-color: rgba(255, 255, 255, 0.2);
     box-shadow: inset 0 0 0 2px var(--accent-color);
@@ -47,6 +40,10 @@
 .game-terminal .cell.invalid {
     background-color: rgba(255, 0, 85, 0.3);
     box-shadow: inset 0 0 0 2px var(--danger-color);
+}
+
+.game-terminal .cell.invalid .attr-icon {
+    opacity: 0.35;
 }
 
 .game-terminal .cell .attr-icon,
@@ -98,26 +95,19 @@
     pointer-events: none;
     opacity: 0.9;
     transform: scale(1.05);
-    filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
 }
 
 .game-terminal .shape-cell,
 .shape-cell {
     width: var(--cell-size);
     height: var(--cell-size);
-    background-color: #fff;
-    border-radius: 2px;
+    background-color: transparent;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: calc(var(--cell-size) * 0.45);
-    color: rgba(0,0,0,0.6);
-    font-weight: bold;
 }
 
 .game-terminal .shape-cell.empty,
 .shape-cell.empty {
-    background-color: transparent !important;
-    box-shadow: none !important;
-    color: transparent;
+    background-color: transparent;
 }

@@ -12,6 +12,7 @@
         resizeTimer = setTimeout(function () {
             recalcLayout();
             for (var ri = 0; ri < 3; ri++) {
+                if (draggedElement && ri === draggedSlotIndex) continue;
                 if (state.availableShapes[ri]) renderShapeInSlot(state.availableShapes[ri], ri);
             }
         }, 150);

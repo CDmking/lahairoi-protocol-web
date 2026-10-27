@@ -10,6 +10,7 @@
 
 - **玩法**：8×8 棋盘中拖拽多格方块填满行/列消除得分
 - **6 种元素属性**：Glacio(冷凝) / Fusion(热熔) / Electro(导电) / Aero(气动) / Spectro(衍射) / Havoc(湮灭)
+- **图标方块**：属性 SVG 为元素色方底 + 白色圆底 + 元素色图标，按 32 种 matrix 形状逐格组合
 - **三档难度**：SIMPLE / STANDARD / CHALLENGE
 - **Demo 教学**：5 个内置场景演示
 - **最高分**：localStorage 持久化当前历史最高分，支持手动清除
@@ -36,7 +37,7 @@
 ├── js/
 │   ├── shapes.js          # 方块形状数据（32 种）
 │   ├── config.js          # 常量、难度参数
-│   ├── state.js           # 运行时状态 + 最高分（localStorage）
+│   ├── state.js           # 运行时状态（含最高分字段）
 │   ├── logic.js           # 纯函数：棋盘碰撞检测、权重计算
 │   ├── elements.js        # 共享 DOM 引用、拖拽状态、窗口缩放处理
 │   ├── render.js          # DOM 渲染：方块绘制、高亮提示、分数显示
@@ -81,7 +82,7 @@
 - `responsive.css`：全部 `@media` 断点，必须最后加载以覆盖基础样式
 
 ### `js/shapes.js`
-- `SHAPES_DATA`：方块形状唯一数据源（含 id / rows / cols / matrix）
+- `SHAPES_DATA`：方块形状唯一数据源（含 id / matrix）
 - `SHAPES_ALL`：从 `SHAPES_DATA.shapes` 提取的 32 种二维 0/1 矩阵
 
 ### `js/config.js`
@@ -95,7 +96,6 @@
 
 ### `js/logic.js`
 - `canPlaceShape(matrix, startX, startY)`：方块能否放置
-- `countPlacements(matrix)`：某方块在棋盘上合法放置数
 - `getShapePlacements(matrix)`：返回所有合法放置位置的 64 位位图列表
 - `placementsOverlap(a, b)`：判断两个放置位图是否重叠
 - `canPlaceAllThree(listA, listB, listC)`：判断 3 个方块能否同时放入当前空位
@@ -106,6 +106,7 @@
 
 ### `js/render.js`
 - DOM 渲染函数：方块绘制、高亮、当前分数/最高分显示
+- `buildShapeCellsHTML(matrix, attribute)`：按 matrix 用属性图标拼出形状单元格
 - `renderShapeInSlot(shapeData, slotIndex)`：在托盘槽中渲染形状
 - `loadHighScore()` / `saveHighScore()`：最高分 localStorage 读写与旧数据迁移
 - `clearHighScore()`：重置 `state.highScore` 并删除本地最高分记录
@@ -229,14 +230,14 @@ npx serve .
 ## 编码约定
 
 ### 语言与风格
-- **JavaScript**：ES5（var 声明、function 表达式），无 import/export
+- **JavaScript**：ES5+（以 var 声明、function 表达式为主），无 import/export
 - **CSS**：CSS 变量 + Flexbox/Grid，移动端响应式（@media 断点 899px / 480px / 600px / 400px）
 - 所有 JS 文件在 HTML 中用 `<script>` 顺序加载，共享全局变量
 
 ### 命名
 - `var` / `function` 全小驼峰（camelCase）
 - 常量全大写下划线（`SCORE_LINE_UNIT`）
-- CSS class 短横线（`diff-btn`、`attr-glacio-bg`）
+- CSS class 短横线（`diff-btn`、`shape-cell`）
 - DOM id 小驼峰（`currentScore`、`highScore`）
 
 ### 全局变量
@@ -256,7 +257,7 @@ npx serve .
 
 ### CSS 变量
 ```css
---bg-color, --bg-gradient, --grid-line, --cell-empty
+--bg-gradient, --grid-line, --cell-empty
 --attr-glacio / --attr-fusion / --attr-electro / --attr-aero / --attr-spectro / --attr-havoc
 --accent-color, --danger-color, --text-color
 --cell-size, --grid-gap, --board-size
@@ -267,7 +268,7 @@ npx serve .
 ## 常见修改场景
 
 ### 添加新方块形状
-在 `shapes.js` 的 `SHAPES_DATA.shapes` 数组末尾追加 `{ id, rows, cols, matrix }`，并更新 `shapeCount`。
+在 `shapes.js` 的 `SHAPES_DATA.shapes` 数组末尾追加 `{ id, matrix }`；行列尺寸由 matrix 自动推导，无需同步额外字段。
 
 ### 更换背景音乐
 替换 `audios/BGM.mp3`（保持文件名），或在 `index.html` 的 `<audio id="bgm">` 中修改 `src` 路径。默认音量在 `audio.js` 的 `BGM_VOLUME` 中调整。
@@ -276,6 +277,7 @@ npx serve .
 1. `config.js` 的 `DIFFICULTY_CONFIG` 添加新条目
 2. 在 `index.html` 的 `.difficulty-selector` 中添加对应 `<button>`
 3. 难度切换逻辑在 `ui.js` 的 `setDifficulty()` 中自动处理
+4. 如需自定义生成权重，修改 `logic.js` 的 `getShapeWeight()`；未匹配的难度默认按 `p` 线性权重
 
 ### 修改 Demo 场景
 编辑 `tutorial.js` 中 `DEMO_SCENES` 数组：
@@ -298,4 +300,4 @@ npx serve .
 - 无后端，纯 localStorage 存储（上限 ~5MB）
 - 触屏拖放依赖 `touch` 事件，`passive: false`
 - 浏览器需支持 CSS Grid / CSS Variables
-- 所有图片为内联 SVG（无外部依赖）
+- 属性图标与全屏图标为本地 SVG 文件，无外部网络依赖

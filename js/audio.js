@@ -14,7 +14,6 @@
 
         bgmInitialized = true;
         bgmEl.volume = BGM_VOLUME;
-        bgmEl.loop = true;
 
         var muted = false;
         try {

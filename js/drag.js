@@ -4,7 +4,7 @@
 
         draggedElement = e.currentTarget;
         draggedShapeData = draggedElement.shapeData;
-        draggedSlotIndex = parseInt(draggedElement.dataset.slotIndex);
+        draggedSlotIndex = parseInt(draggedElement.dataset.slotIndex, 10);
 
         setShapeGrid(CONFIG.CELL_SIZE);
         draggedElement.style.left = '';
@@ -59,17 +59,11 @@
 
             checkLines();
             fillTray();
-            if (!state.isGameOver) checkGameOver();
+            checkGameOver();
 
         } else {
-            var tcs = draggedShapeData._trayCellSize || TRAY_CELL_SIZE;
-            setShapeGrid(tcs);
-            var m = draggedShapeData.matrix;
-            var c = m[0].length, r = m.length;
-            draggedElement.style.left = 'calc(50% - ' + (c * tcs + (c - 1) * CONFIG.GAP) / 2 + 'px)';
-            draggedElement.style.top = 'calc(50% - ' + (r * tcs + (r - 1) * CONFIG.GAP) / 2 + 'px)';
-            draggedElement.classList.remove('dragging');
-            traySlots[draggedSlotIndex].appendChild(draggedElement);
+            draggedElement.remove();
+            renderShapeInSlot(draggedShapeData, draggedSlotIndex);
         }
 
         document.removeEventListener('mousemove', onDragMove);
