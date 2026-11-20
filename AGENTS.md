@@ -41,7 +41,7 @@
 │   ├── logic.js           # 纯函数：棋盘碰撞检测、旋转、权重计算
 │   ├── elements.js        # 共享 DOM 引用、拖拽状态、窗口缩放处理
 │   ├── render.js          # DOM 渲染：方块绘制、高亮提示、分数显示
-│   ├── drag.js            # 鼠标/触屏拖放与旋转
+│   ├── drag.js            # 指针（Pointer Events）拖放与旋转动画
 │   ├── board.js           # 棋盘初始化、方块生成、放置、消除、计分
 │   ├── tutorial.js        # Demo 教学场景数据与自动播放
 │   ├── fullscreen.js      # 全屏切换与状态同步
@@ -76,7 +76,7 @@
 ### `css/*.css`
 - `base.css`：重置、`:root` 变量、`.game-terminal`、终端容器、页脚、属性图标
 - `header.css`：帮助/全屏/音乐/旋转按钮、标题、分数、难度选择
-- `board.css`：游戏区、棋盘、格子状态、托盘、拖拽方块、旋转回弹动画
+- `board.css`：游戏区、棋盘、格子状态、托盘、拖拽方块、旋转动画
 - `overlays.css`：Toast、游戏结束遮罩、消除动画（白色内芯收缩 + 外圈扩散）
 - `tutorial.css`：Demo 覆盖层、面板、导航、播放按钮、拖拽幽灵
 - `responsive.css`：全部 `@media` 断点，必须最后加载以覆盖基础样式
@@ -119,14 +119,16 @@
 
 ### `js/elements.js`
 - 全局 DOM 引用：`boardEl`、`traySlots`、按钮、Toast
-- 拖拽状态：`draggedElement`、`draggedShapeData`、`draggedSlotIndex`、`dragPointerX/Y`（旋转锚点用的最新指针坐标）、`dragTouchId`（起手手指标识）等
+- 拖拽状态：`draggedElement`、`draggedShapeData`、`draggedSlotIndex`、`dragPointerX/Y`（旋转锚点用的最新指针坐标）、`dragPointerId`（起手指针的 pointerId）等
 - `onResize()`：窗口尺寸变化后重算布局并重绘托盘
 
 ### `js/drag.js`
-- 拖放系统：`onDragStart/Move/End`（鼠标 + 触屏），拖拽期间在 document 上挂载旋转相关监听，结束时统一卸载
-- 旋转入口：`onDragKeyDown`（R 键）、`onDragRightMouseDown`（右键）、移动端 `#rotateBtn`（绑定在 `ui.js`）→ `rotateDraggedShape()`
+- 拖放系统：`onDragStart/Move/End` 使用 Pointer Events，按 `pointerId` 只跟踪起手的那根指针；移动/抬起监听挂在 `window` 上，起手时把指针捕获到 `document.body`
+- 旋转入口：`onDragKeyDown`（R 键）、`onDragRightButtonDown`（右键，走 `mousedown`）、移动端 `#rotateBtn`（绑定在 `ui.js`）→ `rotateDraggedShape()`
 - `rotateDraggedShape()`：把 `shapeData.matrix` 换成 `rotateMatrixCW(...)` 的新矩阵后重建拖拽 DOM，并按归一化抓取点 `(fx, fy) → (1 - fy, fx)` 重算 `dragOffsetX/Y`，保证指针下的位置不跳变
-- `getDragTouch(list)`：按 `dragTouchId` 从 TouchList 中找起手手指，避免第二根手指（如点旋转按钮）误落子
+- 旋转动画：`spinDraggedShape()` / `currentRotateAngle()` / `currentRotateSpeed()` / `finishRotateAnim()`，用 rAF 驱动三次 Hermite 曲线，详见「旋转反馈动画」
+- `cancelDrag()`：中断兜底（`pointercancel`、`lostpointercapture`、`blur`、切后台、`init()`），方块按当前朝向回托盘、不落子；`resetDragState()` 统一复位全局状态
+- `onLostPointerCapture(e)`：只处理 `target === document.body` 的捕获丢失；节点移入 body 时旧目标也会派发一次该事件，必须忽略
 - `getBoardCoordinates()`：将指针坐标换算为棋盘坐标
 
 ### `js/board.js`
@@ -152,7 +154,7 @@
 
 ### `js/ui.js`
 - `initGame()`：获取 DOM 引用并绑定所有事件
-- Demo 导航、重启、全屏、清除最高分、旋转按钮（`touchstart` / `mousedown`）与窗口缩放事件
+- Demo 导航、重启、全屏、清除最高分、旋转按钮（`pointerdown`）、窗口缩放，以及 `blur` / `visibilitychange` 的中断兜底
 - `setDifficulty()`：难度切换与按钮状态同步
 
 ### `js/game.js`
@@ -164,23 +166,48 @@
 
 ```
 用户拖拽方块
-  → onDragStart (drag.js)
+  → onDragStart (drag.js)：记录 pointerId、指针捕获到 body
     → onDragMove + highlightBoard (render.js)
       → 旋转（R 键 / 右键 / 移动端按钮）
         → rotateDraggedShape (drag.js)：换矩阵 + 重建 DOM + 重算抓取偏移
+          → spinDraggedShape (drag.js)：rAF 驱动旋转动画
           → highlightBoard (render.js) — 立即按新朝向刷新高亮
       → onDragEnd (drag.js)
-        → canPlaceShape? (logic.js)
-          → placeShape (board.js)
-            → checkLines + addScore (board.js)
-              → fillTray (board.js) — 自适应权重生成
-                → checkGameOver (board.js)
+        → 放置 / 回托盘 / pointercancel 回托盘
+          → canPlaceShape? (logic.js)
+            → placeShape (board.js)
+              → checkLines + addScore (board.js)
+                → fillTray (board.js) — 自适应权重生成
+                  → checkGameOver (board.js)
 ```
 
 ### 状态存储
 - localStorage key: `lahairoi_v3_highscore`
 - 格式：`{ highScore: number }`
 - 启动时若检测到旧 key `lahairoi_v3_leaderboard`，会迁移其中的最高分并删除旧数据
+
+---
+
+## 旋转反馈动画
+
+旋转时方块会顺时针“甩”过 90°，连续旋转会越转越快，而不是每次从 -90° 重新开始。
+
+- 状态：`rotateAnim = { a0, m0, dur, start, raf }`，`a0` 为起始视觉角度（负值 = 还欠多少度回到最终朝向），`m0` 为按 `dur` 归一化的起始角速度
+- 换矩阵后立刻把视觉角度整体退 90°（`a0 = 当前角度 - 90`）：内容已经多转了 90°，屏幕画面不变，再把这笔“欠债”转回 0
+- 打断时保留当前角速度：`m0 = min(当前角速度 × dur, 3|a0|)`，并把剩余欠债的时长压到 `remain × 0.55`，所以连按表现为持续加速
+- 曲线为三次 Hermite（`A(0)=a0, A(1)=0, A'(0)=m0, A'(1)=0`）；`m0 = 3|a0|` 时退化为 `easeOutCubic`，单次旋转手感与旧版一致
+- `m0 ≤ 3|a0|` 保证角度单调、无超调；`dur ≥ |a0| / ROTATE_AVG_SPEED` 把单帧步长压在约 35°（60fps）以内
+- 时长：`dur = max(ROTATE_MIN_MS, remain × 0.55, |a0| / ROTATE_AVG_SPEED)`，并受 `ROTATE_MAX_MS` 上限约束
+- 首帧角度必须在改完矩阵的同一帧同步写入，否则会闪一帧；动画结束后清空内联 `transform`，回落到 `.dragging` 的 `scale(1.05)`
+- 拖拽结束或取消时必须调用 `finishRotateAnim()` 取消 rAF
+- `prefers-reduced-motion: reduce` 时跳过动画
+
+| 常量 | 值 | 作用 |
+|------|----|------|
+| `ROTATE_BASE_MS` | 170 | 单次旋转时长 |
+| `ROTATE_MIN_MS` | 70 | 加速后的时长下限 |
+| `ROTATE_MAX_MS` | 400 | 连按导致欠债过大时的时长上限 |
+| `ROTATE_AVG_SPEED` | 1.4 °/ms | 欠债按此平均速度定时长 |
 
 ---
 
@@ -260,7 +287,7 @@ npx serve .
 - `CONFIG`, `ATTRIBUTES`, `DIFFICULTY_CONFIG`, `TRAY_CELL_SIZE`, `TRAY_CELL_RATIO` (config.js)
 - `state` (state.js)
 - `boardEl`, `traySlots`, `draggedElement`, 等 DOM 引用与拖拽状态 (elements.js)
-- `onDragStart` / `onDragEnd` / `rotateDraggedShape` (drag.js)
+- `onDragStart` / `onDragEnd` / `cancelDrag` / `rotateDraggedShape` (drag.js)
 - `canPlaceShape`, `getShapePlacements`, `placementsOverlap`, `canPlaceAllThree`, `getShapeWeight` (logic.js)
 - `rotateMatrixCW`, `getRotationVariants`, `getCanonicalMatrixKey`, `getShapePlacementsAllRotations` (logic.js)
 - `getLineBaseScore`, `getComboMultiplier`, `getLineClearScore` (logic.js)
@@ -288,7 +315,8 @@ npx serve .
 ### 调整旋转手感 / 旋转按钮
 - 旋转逻辑在 `drag.js` 的 `rotateDraggedShape()`：换矩阵后必须重新 `applyShapeGrid` + `buildShapeCellsHTML`，并按 `(fx, fy) → (1 - fy, fx)` 重算 `dragOffsetX/Y`
 - 锚点必须用 `style.left/top` 而不是 `getBoundingClientRect()`，因为 `.dragging` 带 `scale(1.05)`，视觉框比布局框大 5%
-- 输入入口：`onDragKeyDown`（R 键）、`onDragRightMouseDown`（右键）、`ui.js` 中绑定的 `#rotateBtn`（触屏）
+- 手感由 `ROTATE_*` 常量控制（见「旋转反馈动画」）：调小 `ROTATE_MIN_MS` 更跟手，调小 `ROTATE_AVG_SPEED` 会让单帧跨度与整体转速更平缓
+- 输入入口：`onDragKeyDown`（R 键，忽略 `repeat`，长按不连转）、`onDragRightButtonDown`（右键）、`ui.js` 中绑定的 `#rotateBtn`（`pointerdown`）
 - 按钮位置/尺寸在 `header.css` 的 `.rotate-btn`，横屏覆盖在 `responsive.css` 的 coarse landscape 断点里；只在 `body.is-dragging` 时显示，纯鼠标设备用 `@media (hover: hover) and (pointer: fine)` 隐藏
 - 旋转角度会写回 `shapeData.matrix`（与 `state.availableShapes` 同引用），因此回托盘后角度保留；若要重置，需要额外保存原始矩阵
 
@@ -320,8 +348,11 @@ npx serve .
 
 - 禁用手势缩放（`touch-action: none`）
 - 无后端，纯 localStorage 存储（上限 ~5MB）
-- 触屏拖放依赖 `touch` 事件，`passive: false`；多点触控必须按 `touch.identifier` 过滤，不能直接取 `touches[0]`
+- 拖放统一走 Pointer Events，按 `pointerId` 只跟踪起手指针，不能直接取事件里的“第一个点”
+- 起手时把指针捕获到 `document.body`，并把 `.shape-cell` 设为 `pointer-events: none`：旋转会重建单元格，若命中目标是被重建的节点，触摸/指针序列会中断
+- 鼠标拖拽起手不调用 `preventDefault()`（否则右键的兼容性 `mousedown` 会被抑制）；触摸/手写笔仍调用，用于阻止滚动与长按菜单
+- 中断（`pointercancel`、捕获丢失、`blur`、切后台、重开）一律回托盘、不落子
 - 旋转仅支持顺时针（转 4 次回到原状），不支持逆时针或自由角度
 - 右键旋转只在拖拽期间生效；拖拽期间需屏蔽 `contextmenu`，否则会弹出系统菜单
-- 浏览器需支持 CSS Grid / CSS Variables
+- 浏览器需支持 CSS Grid / CSS Variables / Pointer Events（iOS 13+、Chrome 55+、Firefox 59+）
 - 属性图标与全屏图标为本地 SVG 文件，无外部网络依赖
