@@ -90,6 +90,29 @@
         return (a.lo & b.lo) !== 0 || (a.hi & b.hi) !== 0;
     }
 
+    // 汇总一个形状四个朝向的全部放置位（去重）；best 为单个朝向下的最大放置数。
+    // 三块同时可放的判定用 placements（允许三块各用不同朝向），
+    // 生成权重用 best，避免多朝向形状的权重被平方放大。
+    function getShapePlacementsAllRotations(matrix) {
+        var variants = getRotationVariants(matrix);
+        var placements = [];
+        var seen = {};
+        var best = 0;
+
+        for (var v = 0; v < variants.length; v++) {
+            var list = getShapePlacements(variants[v]);
+            if (list.length > best) best = list.length;
+            for (var i = 0; i < list.length; i++) {
+                var key = list[i].lo + ':' + list[i].hi;
+                if (seen[key]) continue;
+                seen[key] = true;
+                placements.push(list[i]);
+            }
+        }
+
+        return { placements: placements, best: best };
+    }
+
     function canPlaceAllThree(listA, listB, listC) {
         var lists = [listA, listB, listC];
         lists.sort(function (a, b) { return a.length - b.length; });

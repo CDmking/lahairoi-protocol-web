@@ -45,10 +45,16 @@
             }
         }
 
+        var seenShapes = {};
         for (var s = 0; s < SHAPES_ALL.length; s++) {
             var matrix = SHAPES_ALL[s];
-            var placements = getShapePlacements(matrix);
-            if (placements.length === 0) continue;
+            // 形状库中存在互为旋转的条目（如 1x2 横/竖），去重后同一形状只参与一次权重
+            var shapeKey = getCanonicalMatrixKey(matrix);
+            if (seenShapes[shapeKey]) continue;
+            seenShapes[shapeKey] = true;
+
+            var rotationInfo = getShapePlacementsAllRotations(matrix);
+            if (rotationInfo.placements.length === 0) continue;
 
             var area = 0;
             for (var r = 0; r < matrix.length; r++) {
@@ -57,8 +63,8 @@
                 }
             }
 
-            var w = getShapeWeight(placements.length, area, diff);
-            candidates.push({ idx: s, w: w, placements: placements });
+            var w = getShapeWeight(rotationInfo.best, area, diff);
+            candidates.push({ idx: s, w: w, placements: rotationInfo.placements });
         }
 
         var batches = [];
@@ -239,16 +245,11 @@
         for (var si = 0; si < state.availableShapes.length; si++) {
             var shapeData = state.availableShapes[si];
             if (!shapeData) continue;
-            for (var gy = 0; gy < CONFIG.BOARD_SIZE; gy++) {
-                for (var gx = 0; gx < CONFIG.BOARD_SIZE; gx++) {
-                    if (canPlaceShape(shapeData.matrix, gx, gy)) {
-                        hasValidMove = true;
-                        break;
-                    }
-                }
-                if (hasValidMove) break;
+            // 任一朝向可放即视为还有解，避免误判死局
+            if (getShapePlacementsAllRotations(shapeData.matrix).placements.length > 0) {
+                hasValidMove = true;
+                break;
             }
-            if (hasValidMove) break;
         }
 
         if (!hasValidMove) {
