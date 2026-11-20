@@ -14,8 +14,10 @@
         draggedElement.style.top = '';
 
         var isTouch = e.type.indexOf('touch') !== -1;
-        var clientX = isTouch ? e.touches[0].clientX : e.clientX;
-        var clientY = isTouch ? e.touches[0].clientY : e.clientY;
+        var point = isTouch ? e.changedTouches[0] : e;
+        dragTouchId = isTouch ? point.identifier : null;
+        var clientX = point.clientX;
+        var clientY = point.clientY;
 
         var rect = draggedElement.getBoundingClientRect();
 
@@ -45,9 +47,17 @@
         if (!draggedElement) return;
         e.preventDefault();
         var isTouch = e.type.indexOf('touch') !== -1;
-        var clientX = isTouch ? e.touches[0].clientX : e.clientX;
-        var clientY = isTouch ? e.touches[0].clientY : e.clientY;
-        updateDragPosition(clientX, clientY);
+        var point = isTouch ? getDragTouch(e.touches) : e;
+        if (!point) return;
+        updateDragPosition(point.clientX, point.clientY);
+    }
+
+    function getDragTouch(list) {
+        if (!list) return null;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].identifier === dragTouchId) return list[i];
+        }
+        return null;
     }
 
     function updateDragPosition(clientX, clientY) {
@@ -68,8 +78,14 @@
         var isTouch = e.type.indexOf('touch') !== -1;
         if (!isTouch && e.button !== 0) return;
 
-        var clientX = isTouch ? e.changedTouches[0].clientX : e.clientX;
-        var clientY = isTouch ? e.changedTouches[0].clientY : e.clientY;
+        var point = e;
+        if (isTouch) {
+            point = getDragTouch(e.changedTouches);
+            if (!point) return;
+        }
+
+        var clientX = point.clientX;
+        var clientY = point.clientY;
 
         var canceled = e.type === 'touchcancel';
         var boardPos = canceled ? null : getBoardCoordinates(clientX, clientY);
@@ -94,6 +110,7 @@
         draggedElement = null;
         draggedShapeData = null;
         draggedSlotIndex = -1;
+        dragTouchId = null;
         document.body.classList.remove('is-dragging');
     }
 
@@ -178,7 +195,7 @@
     function showRotationHint(isTouch) {
         if (rotationHintShown) return;
         rotationHintShown = true;
-        if (!isTouch) showToast('拖动方块时按 R 或点右键，可顺时针旋转');
+        showToast(isTouch ? '拖动时点 ⟳ 按钮可顺时针旋转方块' : '拖动方块时按 R 或点右键，可顺时针旋转');
     }
 
     function getBoardCoordinates(clientX, clientY) {

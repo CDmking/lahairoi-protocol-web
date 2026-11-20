@@ -26,6 +26,7 @@
         helpBtn = document.getElementById('helpBtn');
         fullscreenBtn = document.getElementById('fullscreenBtn');
         clearHighScoreBtn = document.getElementById('clearHighScoreBtn');
+        rotateBtn = document.getElementById('rotateBtn');
 
         initBgm();
 
@@ -54,6 +55,21 @@
                 e.stopPropagation();
                 openDemo();
             });
+
+            if (rotateBtn) {
+                rotateBtn.addEventListener('touchstart', function (e) {
+                    if (!draggedElement) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    rotateDraggedShape();
+                }, { passive: false });
+
+                rotateBtn.addEventListener('mousedown', function (e) {
+                    if (!draggedElement || e.button !== 0) return;
+                    e.preventDefault();
+                    rotateDraggedShape();
+                });
+            }
 
             document.getElementById('demoPrevBtn').addEventListener('click', function () {
                 if (currentScene > 0) {

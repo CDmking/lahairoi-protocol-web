@@ -1,5 +1,5 @@
     var boardEl, traySlots, currentScoreEl, highScoreEl, gameOverOverlay, restartBtn;
-    var toastBox, helpBtn, fullscreenBtn, clearHighScoreBtn;
+    var toastBox, helpBtn, fullscreenBtn, clearHighScoreBtn, rotateBtn;
     var draggedElement = null;
     var draggedShapeData = null;
     var draggedSlotIndex = -1;
@@ -7,6 +7,7 @@
     var dragOffsetY = 0;
     var dragPointerX = 0;
     var dragPointerY = 0;
+    var dragTouchId = null;
 
     var resizeTimer = null;
     function onResize() {
