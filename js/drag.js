@@ -90,6 +90,7 @@
         var canceled = e.type === 'touchcancel';
         var boardPos = canceled ? null : getBoardCoordinates(clientX, clientY);
         clearBoardHighlight();
+        finishRotateAnim();
 
         if (boardPos && canPlaceShape(draggedShapeData.matrix, boardPos.x, boardPos.y)) {
             var clearOrigin = placeShape(draggedShapeData, boardPos.x, boardPos.y);
@@ -149,6 +150,15 @@
         return value;
     }
 
+    // 旋转反馈：视觉角度欠债模型（详见 AGENTS.md「旋转反馈动画」）
+    // a0 为本次动画的起始角度（负值表示还欠多少度回到最终朝向），m0 为按 dur 归一化的起始角速度。
+    var ROTATE_BASE_MS = 170;    // 单次旋转的基础时长
+    var ROTATE_MIN_MS = 70;      // 加速后的时长下限
+    var ROTATE_MAX_MS = 400;     // 连续猛按导致欠债过大时的时长上限
+    var ROTATE_AVG_SPEED = 1.4;  // °/ms，欠债按此平均速度定时长，把单帧步长压在 ~35° 以内
+    var rotateAnim = null;       // { a0, m0, dur, start, raf }
+    var lastVibrateAt = 0;
+
     function rotateDraggedShape() {
         if (!draggedElement || !draggedShapeData) return;
 
@@ -179,17 +189,89 @@
         moveElement(dragPointerX, dragPointerY);
         highlightBoard(dragPointerX, dragPointerY);
 
-        pulseRotateFeedback();
+        spinDraggedShape();
+        if (navigator.vibrate && performance.now() - lastVibrateAt > 80) {
+            navigator.vibrate(8);
+            lastVibrateAt = performance.now();
+        }
     }
 
-    function pulseRotateFeedback() {
-        draggedElement.classList.remove('rotate-tick');
-        void draggedElement.offsetWidth;
-        draggedElement.classList.add('rotate-tick');
-        setTimeout(function () {
-            if (draggedElement) draggedElement.classList.remove('rotate-tick');
-        }, 220);
-        if (navigator.vibrate) navigator.vibrate(8);
+    // 三次 Hermite：A(0)=a0, A(1)=0, A'(0)=m0, A'(1)=0
+    // m0 = 3|a0| 时退化为 easeOutCubic（单次旋转的旧手感），因此单次与连续旋转的速度曲线可以衔接。
+    function currentRotateAngle(now) {
+        if (!rotateAnim) return 0;
+        var s = (now - rotateAnim.start) / rotateAnim.dur;
+        if (s > 1) s = 1;
+        if (s < 0) s = 0;
+        var s2 = s * s;
+        var s3 = s2 * s;
+        return (2 * s3 - 3 * s2 + 1) * rotateAnim.a0
+            + (s3 - 2 * s2 + s) * rotateAnim.m0;
+    }
+
+    // 角速度（°/ms），正值表示正在收敛到 0
+    function currentRotateSpeed(now) {
+        if (!rotateAnim) return 0;
+        var s = (now - rotateAnim.start) / rotateAnim.dur;
+        if (s > 1) s = 1;
+        if (s < 0) s = 0;
+        var speed = (6 * s * s - 6 * s) * rotateAnim.a0
+            + (3 * s * s - 4 * s + 1) * rotateAnim.m0;
+        return speed / rotateAnim.dur;
+    }
+
+    function applyRotateFrame() {
+        if (!rotateAnim || !draggedElement) return;
+        var now = performance.now();
+        if (now - rotateAnim.start >= rotateAnim.dur) {
+            finishRotateAnim();
+            return;
+        }
+        draggedElement.style.transform = 'scale(1.05) rotate(' + currentRotateAngle(now).toFixed(2) + 'deg)';
+        rotateAnim.raf = requestAnimationFrame(applyRotateFrame);
+    }
+
+    // 矩阵已经换成新朝向，于是把视觉角度整体退 90°：画面不变，再把欠债转回 0。
+    // 打断时保留当前角速度（m0），并把剩余欠债按更短的时长转完，于是越快按越快转。
+    function spinDraggedShape() {
+        var now = performance.now();
+        var a0, m0, dur;
+
+        if (rotateAnim) {
+            var speed = currentRotateSpeed(now);
+            var remain = Math.max(0, rotateAnim.dur - (now - rotateAnim.start));
+            a0 = currentRotateAngle(now) - 90;
+            dur = Math.max(ROTATE_MIN_MS, remain * 0.55, Math.abs(a0) / ROTATE_AVG_SPEED);
+            if (dur > ROTATE_MAX_MS) dur = ROTATE_MAX_MS;
+            m0 = Math.min(speed * dur, 3 * Math.abs(a0));
+            cancelAnimationFrame(rotateAnim.raf);
+        } else {
+            a0 = -90;
+            dur = ROTATE_BASE_MS;
+            m0 = 3 * Math.abs(a0);
+        }
+
+        if (prefersReducedMotion()) {
+            finishRotateAnim();
+            return;
+        }
+
+        rotateAnim = { a0: a0, m0: m0, dur: dur, start: now, raf: 0 };
+        // 必须同步设置首帧角度，否则矩阵已换、transform 还是旧值，会闪一帧
+        draggedElement.style.transform = 'scale(1.05) rotate(' + a0.toFixed(2) + 'deg)';
+        rotateAnim.raf = requestAnimationFrame(applyRotateFrame);
+    }
+
+    function finishRotateAnim() {
+        if (rotateAnim) {
+            cancelAnimationFrame(rotateAnim.raf);
+            rotateAnim = null;
+        }
+        if (draggedElement) draggedElement.style.transform = '';
+    }
+
+    function prefersReducedMotion() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     }
 
     function showRotationHint(isTouch) {

@@ -97,16 +97,6 @@
     transform: scale(1.05);
 }
 
-.game-terminal .shape-element.rotate-tick,
-.shape-element.rotate-tick {
-    animation: shape-rotate-tick 180ms ease-out;
-}
-
-@keyframes shape-rotate-tick {
-    from { transform: scale(1.05) rotate(-90deg); }
-    to { transform: scale(1.05) rotate(0deg); }
-}
-
 .game-terminal .shape-cell,
 .shape-cell {
     width: var(--cell-size);
