@@ -97,6 +97,13 @@
     transform: scale(1.05);
 }
 
+/* pointerdown 的命中目标固定为形状根节点：旋转会重建 .shape-cell，根节点不会被重建，
+   触摸序列因此不会因为目标节点消失而中断 */
+.game-terminal .shape-element > .shape-cell,
+.shape-element > .shape-cell {
+    pointer-events: none;
+}
+
 .game-terminal .shape-cell,
 .shape-cell {
     width: var(--cell-size);

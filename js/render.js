@@ -142,8 +142,7 @@
         shapeEl.dataset.slotIndex = slotIndex;
         shapeEl.shapeData = shapeData;
         shapeEl.innerHTML = buildShapeCellsHTML(matrix, shapeData.attribute);
-        shapeEl.addEventListener('mousedown', onDragStart);
-        shapeEl.addEventListener('touchstart', onDragStart, { passive: false });
+        shapeEl.addEventListener('pointerdown', onDragStart);
 
         slotEl.appendChild(shapeEl);
     }

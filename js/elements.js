@@ -7,7 +7,7 @@
     var dragOffsetY = 0;
     var dragPointerX = 0;
     var dragPointerY = 0;
-    var dragTouchId = null;
+    var dragPointerId = null;
 
     var resizeTimer = null;
     function onResize() {

@@ -1,4 +1,5 @@
     function init() {
+        cancelDrag();
         if (typeof cancelDemoPlayback === 'function') cancelDemoPlayback();
         if (state.isDemoMode) {
             state.isDemoMode = false;

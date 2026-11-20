@@ -57,19 +57,19 @@
             });
 
             if (rotateBtn) {
-                rotateBtn.addEventListener('touchstart', function (e) {
+                rotateBtn.addEventListener('pointerdown', function (e) {
                     if (!draggedElement) return;
                     e.preventDefault();
                     e.stopPropagation();
                     rotateDraggedShape();
-                }, { passive: false });
-
-                rotateBtn.addEventListener('mousedown', function (e) {
-                    if (!draggedElement || e.button !== 0) return;
-                    e.preventDefault();
-                    rotateDraggedShape();
                 });
             }
+
+            // 指针序列被系统中断（切后台、来电、失去焦点）时把方块放回托盘
+            window.addEventListener('blur', cancelDrag);
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'hidden') cancelDrag();
+            });
 
             document.getElementById('demoPrevBtn').addEventListener('click', function () {
                 if (currentScene > 0) {

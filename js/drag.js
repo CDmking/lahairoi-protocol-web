@@ -2,8 +2,11 @@
 
     function onDragStart(e) {
         if (state.isGameOver || state.isDemoMode) return;
-        if (e.type.indexOf('mouse') !== -1 && e.button !== 0) return;
-        e.preventDefault();
+        if (draggedElement) return;
+        if (e.button !== 0 || e.isPrimary === false) return;
+        // 触摸/手写笔要阻止默认手势（滚动、长按菜单）；鼠标不阻止，
+        // 否则同一指针后续按键（右键旋转）的兼容性 mouse 事件会被一并抑制。
+        if (e.pointerType !== 'mouse') e.preventDefault();
 
         draggedElement = e.currentTarget;
         draggedShapeData = draggedElement.shapeData;
@@ -13,11 +16,9 @@
         draggedElement.style.left = '';
         draggedElement.style.top = '';
 
-        var isTouch = e.type.indexOf('touch') !== -1;
-        var point = isTouch ? e.changedTouches[0] : e;
-        dragTouchId = isTouch ? point.identifier : null;
-        var clientX = point.clientX;
-        var clientY = point.clientY;
+        dragPointerId = e.pointerId;
+        var clientX = e.clientX;
+        var clientY = e.clientY;
 
         var rect = draggedElement.getBoundingClientRect();
 
@@ -31,33 +32,32 @@
         document.body.appendChild(draggedElement);
         moveElement(clientX, clientY);
 
-        document.addEventListener('mousemove', onDragMove);
-        document.addEventListener('mouseup', onDragEnd);
-        document.addEventListener('touchmove', onDragMove, { passive: false });
-        document.addEventListener('touchend', onDragEnd);
-        document.addEventListener('touchcancel', onDragEnd);
+        // 捕获到 body：body 不会被拖拽过程中的 DOM 重建影响。
+        // 触摸的隐式捕获原本会落在方块内部的 .shape-cell 上，而旋转会重建这些单元格，
+        // 导致后续 pointermove/pointerup 丢失、方块永久卡住。
+        captureDragPointer(e.pointerId);
+
+        window.addEventListener('pointermove', onDragMove, { passive: false });
+        window.addEventListener('pointerup', onDragEnd);
+        window.addEventListener('pointercancel', onDragEnd);
+        document.addEventListener('lostpointercapture', onLostPointerCapture);
         document.addEventListener('keydown', onDragKeyDown);
-        document.addEventListener('mousedown', onDragRightMouseDown);
+        document.addEventListener('mousedown', onDragRightButtonDown);
         document.addEventListener('contextmenu', preventDragContextMenu);
 
-        showRotationHint(isTouch);
+        showRotationHint(e.pointerType === 'touch');
     }
 
     function onDragMove(e) {
-        if (!draggedElement) return;
+        if (!draggedElement || e.pointerId !== dragPointerId) return;
         e.preventDefault();
-        var isTouch = e.type.indexOf('touch') !== -1;
-        var point = isTouch ? getDragTouch(e.touches) : e;
-        if (!point) return;
-        updateDragPosition(point.clientX, point.clientY);
+        updateDragPosition(e.clientX, e.clientY);
     }
 
-    function getDragTouch(list) {
-        if (!list) return null;
-        for (var i = 0; i < list.length; i++) {
-            if (list[i].identifier === dragTouchId) return list[i];
-        }
-        return null;
+    function captureDragPointer(pointerId) {
+        try {
+            document.body.setPointerCapture(pointerId);
+        } catch (err) { }
     }
 
     function updateDragPosition(clientX, clientY) {
@@ -73,22 +73,15 @@
     }
 
     function onDragEnd(e) {
-        if (!draggedElement) return;
+        if (!draggedElement || e.pointerId !== dragPointerId) return;
 
-        var isTouch = e.type.indexOf('touch') !== -1;
-        if (!isTouch && e.button !== 0) return;
+        var canceled = e.type === 'pointercancel';
+        // 只有左键抬起或指针被取消才结束拖拽；右键抬起（旋转）不能落子
+        if (!canceled && e.button !== 0) return;
+        // 第二根手指的抬起不结束拖拽
+        if (!canceled && e.isPrimary === false) return;
 
-        var point = e;
-        if (isTouch) {
-            point = getDragTouch(e.changedTouches);
-            if (!point) return;
-        }
-
-        var clientX = point.clientX;
-        var clientY = point.clientY;
-
-        var canceled = e.type === 'touchcancel';
-        var boardPos = canceled ? null : getBoardCoordinates(clientX, clientY);
+        var boardPos = canceled ? null : getBoardCoordinates(e.clientX, e.clientY);
         clearBoardHighlight();
         finishRotateAnim();
 
@@ -107,22 +100,45 @@
         }
 
         unbindDragListeners();
+        resetDragState();
+    }
 
+    // 捕获被浏览器收回（例如指针被系统中断）时兜底：把方块放回托盘，避免留下幽灵。
+    // 只处理 body 上的捕获：把节点移动到 body 时会先派发一次“旧目标失去捕获”的事件。
+    function onLostPointerCapture(e) {
+        if (!draggedElement || e.pointerId !== dragPointerId) return;
+        if (e.target !== document.body) return;
+        cancelDrag();
+    }
+
+    // 中断拖拽：方块按当前朝向回托盘，不落子
+    function cancelDrag() {
+        if (!draggedElement) return;
+        clearBoardHighlight();
+        finishRotateAnim();
+        draggedElement.remove();
+        if (state.availableShapes[draggedSlotIndex]) {
+            renderShapeInSlot(state.availableShapes[draggedSlotIndex], draggedSlotIndex);
+        }
+        unbindDragListeners();
+        resetDragState();
+    }
+
+    function resetDragState() {
         draggedElement = null;
         draggedShapeData = null;
         draggedSlotIndex = -1;
-        dragTouchId = null;
+        dragPointerId = null;
         document.body.classList.remove('is-dragging');
     }
 
     function unbindDragListeners() {
-        document.removeEventListener('mousemove', onDragMove);
-        document.removeEventListener('mouseup', onDragEnd);
-        document.removeEventListener('touchmove', onDragMove);
-        document.removeEventListener('touchend', onDragEnd);
-        document.removeEventListener('touchcancel', onDragEnd);
+        window.removeEventListener('pointermove', onDragMove);
+        window.removeEventListener('pointerup', onDragEnd);
+        window.removeEventListener('pointercancel', onDragEnd);
+        document.removeEventListener('lostpointercapture', onLostPointerCapture);
         document.removeEventListener('keydown', onDragKeyDown);
-        document.removeEventListener('mousedown', onDragRightMouseDown);
+        document.removeEventListener('mousedown', onDragRightButtonDown);
         document.removeEventListener('contextmenu', preventDragContextMenu);
     }
 
@@ -133,7 +149,9 @@
         rotateDraggedShape();
     }
 
-    function onDragRightMouseDown(e) {
+    // 右键旋转走 mousedown：pointerdown 只在同一指针“从无按键到有按键”时触发，
+    // 左键按住时再按右键不会再发 pointerdown。
+    function onDragRightButtonDown(e) {
         if (!draggedElement || e.button !== 2) return;
         e.preventDefault();
         rotateDraggedShape();
