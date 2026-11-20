@@ -1,3 +1,51 @@
+    function rotateMatrixCW(matrix) {
+        var rows = matrix.length;
+        var cols = matrix[0].length;
+        var rotated = [];
+        for (var x = 0; x < cols; x++) {
+            var row = [];
+            for (var y = rows - 1; y >= 0; y--) {
+                row.push(matrix[y][x]);
+            }
+            rotated.push(row);
+        }
+        return rotated;
+    }
+
+    function matrixKey(matrix) {
+        var parts = [];
+        for (var y = 0; y < matrix.length; y++) {
+            parts.push(matrix[y].join(''));
+        }
+        return parts.join('/');
+    }
+
+    function getRotationVariants(matrix) {
+        var variants = [];
+        var seen = {};
+        var current = matrix;
+        for (var i = 0; i < 4; i++) {
+            var key = matrixKey(current);
+            if (!seen[key]) {
+                seen[key] = true;
+                variants.push(current);
+            }
+            current = rotateMatrixCW(current);
+        }
+        return variants;
+    }
+
+    function getCanonicalMatrixKey(matrix) {
+        var key = matrixKey(matrix);
+        var current = matrix;
+        for (var i = 0; i < 3; i++) {
+            current = rotateMatrixCW(current);
+            var candidate = matrixKey(current);
+            if (candidate < key) key = candidate;
+        }
+        return key;
+    }
+
     function canPlaceShape(matrix, startX, startY) {
         for (var cy = 0; cy < matrix.length; cy++) {
             for (var cx = 0; cx < matrix[0].length; cx++) {

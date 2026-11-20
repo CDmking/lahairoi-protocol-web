@@ -5,6 +5,8 @@
     var draggedSlotIndex = -1;
     var dragOffsetX = 0;
     var dragOffsetY = 0;
+    var dragPointerX = 0;
+    var dragPointerY = 0;
 
     var resizeTimer = null;
     function onResize() {
